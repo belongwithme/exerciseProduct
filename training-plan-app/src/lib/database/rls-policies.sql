@@ -168,7 +168,7 @@ CREATE POLICY "Users can create achievements" ON public.user_achievements
 --     );
 
 -- 更安全的管理员策略示例（基于JWT声明）：
--- CREATE POLICY "Admins can view all data" ON public.profiles
---     FOR ALL USING (
---         auth.jwt() ->> 'role' = 'admin'
---     ); 
+CREATE POLICY "Admins can view all data" ON public.profiles
+    FOR ALL USING (
+        auth.jwt() ->> 'role' = 'admin'
+    ); 
