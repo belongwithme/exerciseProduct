@@ -71,6 +71,12 @@
           个人资料
         </button>
         <button
+          on:click={() => goto('/analysis')}
+          class="btn-primary text-sm"
+        >
+          能力分析
+        </button>
+        <button
           on:click={handleSignOut}
           class="btn-secondary text-sm"
         >
@@ -194,8 +200,8 @@
             3
           </span>
           <div>
-            <h4 class="font-medium text-gray-800">用户认证系统</h4>
-            <p class="text-sm text-gray-600">实现用户注册、登录、个人资料管理</p>
+            <h4 class="font-medium text-gray-800">能力分析功能</h4>
+            <p class="text-sm text-gray-600">弹跳能力分析、力量结构评估、核心问题分析</p>
           </div>
         </div>
       </div>

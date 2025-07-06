@@ -2,6 +2,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { initAuth, user, authLoading, authError, cleanupAuth } from '$lib/stores/auth';
+  import { page } from '$app/stores';
   // 引入全局样式
   import '../app.css';
 
@@ -37,8 +38,87 @@
   $: shouldShowLoading = !initializationComplete;
 </script>
 
+<!-- 全局页眉 -->
+<header class="bg-white dark:bg-gray-800 shadow-md">
+  <nav class="container mx-auto px-4 py-2 flex justify-between items-center">
+    <a href="/" class="text-xl font-bold text-blue-600 dark:text-blue-400"> 弹跳训练营 </a>
+    {#if $user}
+      <ul class="flex items-center space-x-4">
+        <li>
+          <a
+            href="/analysis"
+            class="px-3 py-2 rounded"
+            class:font-bold={$page.url.pathname === '/analysis'}
+            class:text-blue-600={$page.url.pathname === '/analysis'}
+            class:text-gray-600={$page.url.pathname !== '/analysis'}
+            class:dark:text-white={$page.url.pathname !== '/analysis'}
+          >
+            能力分析
+          </a>
+        </li>
+        <li>
+          <a
+            href="/plans"
+            class="px-3 py-2 rounded"
+            class:font-bold={$page.url.pathname === '/plans'}
+            class:text-blue-600={$page.url.pathname === '/plans'}
+            class:text-gray-600={$page.url.pathname !== '/plans'}
+            class:dark:text-white={$page.url.pathname !== '/plans'}
+          >
+            训练计划
+          </a>
+        </li>
+        <li>
+          <a
+            href="/log"
+            class="px-3 py-2 rounded"
+            class:font-bold={$page.url.pathname === '/log'}
+            class:text-blue-600={$page.url.pathname === '/log'}
+            class:text-gray-600={$page.url.pathname !== '/log'}
+            class:dark:text-white={$page.url.pathname !== '/log'}
+          >
+            训练日志
+          </a>
+        </li>
+        <li>
+          <a
+            href="/tools"
+            class="px-3 py-2 rounded"
+            class:font-bold={$page.url.pathname.startsWith('/tools')}
+            class:text-blue-600={$page.url.pathname.startsWith('/tools')}
+            class:text-gray-600={!$page.url.pathname.startsWith('/tools')}
+            class:dark:text-white={!$page.url.pathname.startsWith('/tools')}
+          >
+            工具箱
+          </a>
+        </li>
+        <li>
+          <a
+            href="/profile"
+            class="px-3 py-2 rounded"
+            class:font-bold={$page.url.pathname === '/profile'}
+            class:text-blue-600={$page.url.pathname === '/profile'}
+            class:text-gray-600={$page.url.pathname !== '/profile'}
+            class:dark:text-white={$page.url.pathname !== '/profile'}
+          >
+            个人资料
+          </a>
+        </li>
+        <li>
+          <a
+            href="/setup-demo"
+            class="px-3 py-2 rounded text-sm bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-700"
+          >
+            设置演示数据
+          </a>
+        </li>
+      </ul>
+    {/if}
+  </nav>
+</header>
+
 <!-- 主要内容区域 -->
-<main class="min-h-screen">
+<main class="min-h-screen bg-gray-50 dark:bg-gray-900">
   {#if shouldShowLoading}
     <!-- 认证加载中 -->
     <div class="min-h-screen bg-gray-50 flex items-center justify-center">

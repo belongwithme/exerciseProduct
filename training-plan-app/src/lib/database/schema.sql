@@ -46,11 +46,16 @@ CREATE TABLE IF NOT EXISTS public.exercises (
     
     -- 分类信息
     muscle_group TEXT NOT NULL CHECK (muscle_group IN (
-        'legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'full_body', 'plyometric'
+        'legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'full_body', 'plyometric',
+        -- 为兼容 exercemus 数据源，添加更多肌肉群
+        'abs', 'biceps', 'calves', 'forearms', 'glutes', 'hamstrings', 'lats', 
+        'pectorals', 'quads', 'traps', 'triceps', 'upper back', 'lower back', 'cardio'
     )),
     equipment TEXT CHECK (equipment IN (
         'none', 'barbell', 'dumbbell', 'kettlebell', 'resistance_band', 
-        'pull_up_bar', 'box', 'medicine_ball', 'other'
+        'pull_up_bar', 'box', 'medicine_ball', 'other',
+        -- 为兼容 exercemus 数据源，添加更多器械类型
+        'machine', 'cable', 'e-z curl bar', 'body weight', 'band', 'smith machine'
     )),
     difficulty_level INTEGER CHECK (difficulty_level BETWEEN 1 AND 5),
     

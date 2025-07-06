@@ -121,7 +121,8 @@
         loadDebugInfo();
       }
     } catch (error) {
-      alert(`删除档案错误: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`删除档案错误: ${errorMessage}`);
     }
   }
 
@@ -132,7 +133,8 @@
       // 这里需要手动执行SQL脚本
       alert('请在Supabase SQL编辑器中运行 fix-trigger.sql 脚本');
     } catch (error) {
-      alert(`修复触发器错误: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`修复触发器错误: ${errorMessage}`);
     }
   }
 </script>

@@ -23,13 +23,12 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 2. Exercises 表策略
--- 所有用户都可以查看系统预设动作
--- 用户只能修改自己创建的动作
-CREATE POLICY "Anyone can view system exercises" ON public.exercises
-    FOR SELECT USING (is_system_exercise = true);
+-- 允许所有认证用户查看所有动作
+DROP POLICY IF EXISTS "Anyone can view system exercises" ON public.exercises;
+DROP POLICY IF EXISTS "Users can view own exercises" ON public.exercises;
 
-CREATE POLICY "Users can view own exercises" ON public.exercises
-    FOR SELECT USING (created_by = auth.uid());
+CREATE POLICY "Authenticated users can view all exercises" ON public.exercises
+    FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Users can create exercises" ON public.exercises
     FOR INSERT WITH CHECK (created_by = auth.uid());

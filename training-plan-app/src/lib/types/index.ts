@@ -116,4 +116,46 @@ export interface TrainingStats {
   average_duration: number;
   favorite_exercises: string[];
   progress_trend: 'up' | 'down' | 'stable';
+}
+
+// 弹跳高度进展数据类型
+export interface JumpProgressData {
+  date: string;
+  jump_height: number; // 弹跳高度 (cm)
+  max_touch_height: number; // 最大摸高 (cm)
+  target_height: number; // 目标高度 (cm)
+}
+
+// 训练进度数据类型
+export interface TrainingProgressData {
+  current_progress: number; // 当前进度百分比 (0-100)
+  target_progress: number; // 目标进度百分比 (通常是100)
+  days_trained: number; // 已训练天数
+  total_days: number; // 总计划天数
+  completion_rate: number; // 完成率 (0-1)
+  streak_days: number; // 连续训练天数
+}
+
+// 进度统计类型
+export interface ProgressStats {
+  jump_progress: JumpProgressData[];
+  training_progress: TrainingProgressData;
+  weekly_stats: {
+    week: number;
+    workouts_completed: number;
+    total_duration: number;
+    average_jump_height: number;
+  }[];
+  monthly_comparison: {
+    current_month: {
+      workouts: number;
+      avg_jump: number;
+      improvement: number;
+    };
+    previous_month: {
+      workouts: number;
+      avg_jump: number;
+      improvement: number;
+    };
+  };
 } 

@@ -163,14 +163,20 @@
 
 <style>
   .alert {
-    @apply px-4 py-3 rounded-lg mb-4;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
   }
   
   .alert-success {
-    @apply bg-green-50 border border-green-200 text-green-800;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
   }
   
   .alert-error {
-    @apply bg-red-50 border border-red-200 text-red-800;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
   }
 </style> 
