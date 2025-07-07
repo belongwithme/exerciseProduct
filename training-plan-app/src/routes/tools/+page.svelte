@@ -11,8 +11,8 @@
 			href: '/tools/timer'
 		},
 		{
-			title: '分享计划',
-			description: '将你的训练计划分享给朋友或教练。',
+			title: '导出训练计划',
+			description: '将你的训练计划导出为PDF文件，方便打印或离线查看。',
 			href: '/tools/share'
 		}
 	];

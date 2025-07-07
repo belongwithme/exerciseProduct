@@ -8,15 +8,37 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		throw redirect(303, '/auth');
 	}
 
-	// 只选择需要的字段，减轻数据传输负担
+	// 获取完整的训练计划数据，包括关联的动作
 	const { data: plans, error } = await supabase
 		.from('workout_plans')
-		.select('id, name, description')
-		.eq('user_id', session.user.id);
+		.select(`
+			id,
+			name,
+			description,
+			plan_exercises (
+				exercise_id,
+				target_sets,
+				target_reps,
+				target_weight_kg,
+				rest_seconds,
+				exercise_order,
+				week_number,
+				day_of_week,
+				notes,
+				exercises (
+					id,
+					name,
+					description,
+					muscle_group,
+					equipment
+				)
+			)
+		`)
+		.eq('user_id', session.user.id)
+		.order('created_at', { ascending: false });
 
 	if (error) {
 		console.error('Error fetching workout plans for sharing:', error);
-		// 即使出错，也要返回 session
 		return { session, plans: [] };
 	}
 

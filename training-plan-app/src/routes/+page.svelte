@@ -2,13 +2,75 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { user, signOut } from '$lib/stores/auth';
-
+  import { onMount } from 'svelte';
+  
   // 页面标题
   const pageTitle = "训练计划管理系统";
-  const version = "1.0.0-MVP";
   
-  // 当前时间
-  const currentDate = new Date().toLocaleDateString('zh-CN');
+  // 功能模块
+  const features = [
+    {
+      title: '训练计划',
+      description: '创建和管理个性化训练计划',
+      icon: '📋',
+      href: '/plans',
+      color: 'blue'
+    },
+    {
+      title: '能力分析',
+      description: '分析弹跳能力和力量结构',
+      icon: '📊',
+      href: '/analysis',
+      color: 'green'
+    },
+    {
+      title: '进度追踪',
+      description: '追踪训练进度和成果',
+      icon: '📈',
+      href: '/progress',
+      color: 'purple'
+    },
+    {
+      title: '训练记录',
+      description: '记录每日训练数据',
+      icon: '✍️',
+      href: '/log',
+      color: 'orange'
+    },
+    {
+      title: '工具箱',
+      description: '实用训练辅助工具',
+      icon: '🛠️',
+      href: '/tools',
+      color: 'indigo'
+    },
+    {
+      title: '个人资料',
+      description: '管理个人信息和目标',
+      icon: '👤',
+      href: '/profile',
+      color: 'pink'
+    }
+  ];
+
+  // 快速统计数据
+  let stats = {
+    plans: 0,
+    workouts: 0,
+    streak: 0
+  };
+
+  onMount(async () => {
+    if ($user) {
+      // 这里可以加载用户的统计数据
+      // 暂时使用模拟数据
+      stats = {
+        plans: 3,
+        workouts: 12,
+        streak: 5
+      };
+    }
+  });
 
   /**
    * 处理登出
@@ -16,7 +78,7 @@
   async function handleSignOut() {
     const result = await signOut();
     if (result.success) {
-      console.log('登出成功');
+      goto('/auth');
     }
   }
 
@@ -30,13 +92,6 @@
       goto(`/auth?mode=${mode}`);
     }
   }
-
-  /**
-   * 跳转到个人资料页面
-   */
-  function goToProfile() {
-    goto('/profile');
-  }
 </script>
 
 <!-- 页面头部 -->
@@ -46,167 +101,152 @@
 </svelte:head>
 
 <!-- 主要内容 -->
-<div class="container mx-auto px-4 py-8">
-  <!-- 用户状态栏 -->
-  <div class="flex justify-between items-center mb-8">
-    <div class="flex items-center space-x-4">
-      {#if $user}
-        <div class="flex items-center space-x-2">
-          <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-            {$user.email?.charAt(0).toUpperCase()}
-          </span>
-          <span class="text-gray-700">欢迎，{$user.email}</span>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- 导航栏 -->
+  <nav class="bg-white dark:bg-gray-800 shadow-sm">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <h1 class="text-xl font-bold text-gray-800 dark:text-white">
+            🏋️‍♂️ 训练计划管理系统
+          </h1>
         </div>
-      {:else}
-        <span class="text-gray-600">未登录</span>
-      {/if}
-    </div>
-    
-    <div class="flex items-center space-x-3">
-      {#if $user}
-        <button
-          on:click={goToProfile}
-          class="btn-secondary text-sm"
-        >
-          个人资料
-        </button>
-        <button
-          on:click={() => goto('/analysis')}
-          class="btn-primary text-sm"
-        >
-          能力分析
-        </button>
-        <button
-          on:click={handleSignOut}
-          class="btn-secondary text-sm"
-        >
-          登出
-        </button>
-      {:else}
-        <button
-          on:click={() => goToAuth('signin')}
-          class="btn-primary text-sm"
-        >
-          登录
-        </button>
-        <button
-          on:click={() => goToAuth('signup')}
-          class="btn-secondary text-sm"
-        >
-          注册
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <!-- 欢迎区域 -->
-  <div class="text-center mb-12">
-    <h1 class="text-4xl font-bold text-gray-800 mb-4">
-      🏋️‍♂️ 训练计划管理系统
-    </h1>
-    <p class="text-xl text-gray-600 mb-2">
-      专业的弹跳训练与力量分析平台
-    </p>
-    <p class="text-sm text-gray-500">
-      版本: {version} | 日期: {currentDate}
-    </p>
-  </div>
-
-  <!-- 项目状态卡片 -->
-  <div class="max-w-4xl mx-auto">
-    <div class="card mb-8">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-        📋 项目初始化状态
-      </h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- 技术栈 -->
-        <div>
-          <h3 class="text-lg font-medium text-gray-700 mb-3">技术栈</h3>
-          <ul class="space-y-2">
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">SvelteKit 1.20.4</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">Tailwind CSS 3.3.0</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">TypeScript 5.0.0</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">Vite 4.4.2</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- 完成状态 -->
-        <div>
-          <h3 class="text-lg font-medium text-gray-700 mb-3">初始化完成</h3>
-          <ul class="space-y-2">
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">SvelteKit项目创建</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">Tailwind CSS配置</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">TypeScript支持</span>
-            </li>
-            <li class="flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-              <span class="text-gray-600">项目结构设置</span>
-            </li>
-          </ul>
+        
+        <div class="flex items-center space-x-4">
+          {#if $user}
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {$user.email}
+            </span>
+            <button
+              on:click={handleSignOut}
+              class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
+              登出
+            </button>
+          {:else}
+            <button
+              on:click={() => goToAuth('signin')}
+              class="btn-primary text-sm"
+            >
+              登录
+            </button>
+            <button
+              on:click={() => goToAuth('signup')}
+              class="btn-secondary text-sm"
+            >
+              注册
+            </button>
+          {/if}
         </div>
       </div>
     </div>
+  </nav>
 
-    <!-- 下一步计划 -->
-    <div class="card">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-        🚀 下一步开发计划
-      </h2>
-      
-      <div class="space-y-3">
-        <div class="flex items-start">
-          <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">
-            1
-          </span>
-          <div>
-            <h4 class="font-medium text-gray-800">数据库配置</h4>
-            <p class="text-sm text-gray-600">创建Supabase项目，配置数据库连接</p>
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    {#if $user}
+      <!-- 欢迎信息 -->
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+          欢迎回来！
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">
+          继续你的训练之旅，每一天都是进步的机会。
+        </p>
+      </div>
+
+      <!-- 快速统计 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">训练计划</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">{stats.plans}</p>
+            </div>
+            <span class="text-3xl">📋</span>
           </div>
         </div>
-        
-        <div class="flex items-start">
-          <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">
-            2
-          </span>
-          <div>
-            <h4 class="font-medium text-gray-800">数据库结构建立</h4>
-            <p class="text-sm text-gray-600">创建用户、训练计划、训练记录等核心表</p>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">完成训练</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">{stats.workouts}</p>
+            </div>
+            <span class="text-3xl">💪</span>
           </div>
         </div>
-        
-        <div class="flex items-start">
-          <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">
-            3
-          </span>
-          <div>
-            <h4 class="font-medium text-gray-800">能力分析功能</h4>
-            <p class="text-sm text-gray-600">弹跳能力分析、力量结构评估、核心问题分析</p>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">连续天数</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">{stats.streak}</p>
+            </div>
+            <span class="text-3xl">🔥</span>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+
+      <!-- 功能模块 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {#each features as feature}
+          <a
+            href={feature.href}
+            class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+          >
+            <div class="flex items-start">
+              <span class="text-4xl mr-4">{feature.icon}</span>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white group-hover:text-{feature.color}-600 dark:group-hover:text-{feature.color}-400">
+                  {feature.title}
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {feature.description}
+                </p>
+              </div>
+            </div>
+          </a>
+        {/each}
+      </div>
+    {:else}
+      <!-- 未登录状态 -->
+      <div class="max-w-2xl mx-auto text-center py-16">
+        <h2 class="text-4xl font-bold text-gray-800 dark:text-white mb-4">
+          🏋️‍♂️ 训练计划管理系统
+        </h2>
+        <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
+          专业的弹跳训练与力量分析平台
+        </p>
+        <div class="space-y-4 mb-8">
+          <p class="text-gray-600 dark:text-gray-400">
+            ✅ 个性化训练计划定制
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            ✅ 科学的能力分析系统
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            ✅ 详细的进度追踪记录
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            ✅ 实用的训练辅助工具
+          </p>
+        </div>
+        <div class="flex justify-center space-x-4">
+          <button
+            on:click={() => goToAuth('signup')}
+            class="btn-primary"
+          >
+            立即开始
+          </button>
+          <button
+            on:click={() => goToAuth('signin')}
+            class="btn-secondary"
+          >
+            登录账号
+          </button>
+        </div>
+      </div>
+    {/if}
+  </main>
 </div>
 
 <!-- 页面样式 -->

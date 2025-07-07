@@ -1,130 +1,155 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { Plus, Trash2, Edit } from 'lucide-svelte';
+	import { writable } from 'svelte/store';
+	import { onMount } from 'svelte';
 
 	export let data: PageData;
 
-	// 'plans' is an array of workout plans, each with its exercises.
-	// We infer the type from PageData to ensure it's in sync with the load function.
-	$: plans = data.plans;
+	// 使用 store 来管理计划，方便实时更新 UI
+	const plans = writable(data.plans || []);
+	
+	onMount(() => {
+		// 如果从服务器加载的数据不为空，则更新 store
+		if (data.plans) {
+			plans.set(data.plans);
+		}
+	});
 
-	// Index of the currently selected plan (tab). Defaults to the first plan.
-	let selectedPlanIndex = 0;
+	let showCreateEditModal = false;
+	let showDeleteModal = false;
+	let selectedPlan = null;
+	let planToDelete = null;
 
-	// A derived variable for the currently selected plan.
-	$: selectedPlan = plans?.[selectedPlanIndex];
-
-	/**
-	 * Changes the selected plan index.
-	 * @param {number} index - The index of the plan to select.
-	 */
-	function selectPlan(index: number) {
-		selectedPlanIndex = index;
+	function openNewPlanModal() {
+		selectedPlan = null;
+		showCreateEditModal = true;
 	}
+
+	function openEditPlanModal(plan) {
+		selectedPlan = plan;
+		showCreateEditModal = true;
+	}
+
+	function openDeletePlanModal(plan) {
+		planToDelete = plan;
+		showDeleteModal = true;
+	}
+
+	async function handlePlanSave(event) {
+		const savedPlan = event.detail;
+		if (savedPlan.id) {
+			// 更新
+			plans.update(p => p.map(plan => plan.id === savedPlan.id ? savedPlan : plan));
+		} else {
+			// 创建
+			plans.update(p => [...p, savedPlan]);
+		}
+		showCreateEditModal = false;
+	}
+
+	async function handlePlanDelete() {
+		if (!planToDelete) return;
+		
+		const response = await fetch(`/api/plans/${planToDelete.id}`, {
+			method: 'DELETE'
+		});
+
+		if (response.ok) {
+			plans.update(p => p.filter(plan => plan.id !== planToDelete.id));
+			planToDelete = null;
+			showDeleteModal = false;
+		} else {
+			// 可以在这里添加错误提示
+			console.error('删除失败');
+		}
+	}
+
+	// 动态导入组件，因为它们只在特定交互时需要
+	let PlanFormModal;
+	onMount(async () => {
+		const module = await import('$lib/components/Plans/PlanFormModal.svelte');
+		PlanFormModal = module.default;
+	});
+
 </script>
 
 <div class="container mx-auto p-4 md:p-8">
-	<h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white border-b pb-2">
-		训练计划
-	</h1>
+	<div class="flex justify-between items-center mb-6 border-b pb-2">
+		<h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+			我的训练计划
+		</h1>
+		<button
+			on:click={openNewPlanModal}
+			class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+		>
+			<Plus class="w-5 h-5 mr-2" />
+			新建计划
+		</button>
+	</div>
 
-	{#if plans && plans.length > 0}
-		<!-- Tabs for selecting a plan -->
-		<div class="flex border-b mb-6">
-			{#each plans as plan, index}
-				<button
-					on:click={() => selectPlan(index)}
-					class="py-2 px-4 font-semibold text-lg focus:outline-none"
-					class:text-blue-600={selectedPlanIndex === index}
-					class:border-b-2={selectedPlanIndex === index}
-					class:border-blue-600={selectedPlanIndex === index}
-					class:text-gray-500={selectedPlanIndex !== index}
-				>
-					{plan.name || `计划 ${index + 1}`}
-				</button>
-			{/each}
-		</div>
-
-		<!-- Selected Plan Details -->
-		{#if selectedPlan}
-			<div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-				<!-- Plan Description -->
-				<div class="mb-6">
-					<h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
-						阶段目标
-					</h2>
-					<p class="text-gray-600 dark:text-gray-400">
-						{selectedPlan.description || '暂无描述'}
-					</p>
-				</div>
-
-				<!-- Exercises List -->
-				<div>
-					<h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">训练内容</h3>
-					<div class="space-y-4">
-						{#each selectedPlan.plan_exercises as item}
-							<div
-								class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center"
-							>
-								<div>
-									<h4 class="font-bold text-lg text-gray-800 dark:text-white">
-										{item.exercises.name}
-									</h4>
-									<p class="text-sm text-gray-500 dark:text-gray-400">
-										{item.exercises.muscle_group} | {item.exercises.equipment}
-									</p>
-									{#if item.notes}
-										<p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-											备注: {item.notes}
-										</p>
-									{/if}
-								</div>
-								<div class="text-right">
-									<p class="text-lg font-semibold text-gray-800 dark:text-white">
-										{item.target_sets} x {item.target_reps}
-									</p>
-									<p class="text-sm text-gray-500 dark:text-gray-400">组x次</p>
-								</div>
+	{#if $plans && $plans.length > 0}
+		<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each $plans as plan (plan.id)}
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+					<div class="p-6">
+						<div class="flex justify-between items-start">
+							<h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">{plan.name}</h2>
+							<div class="flex space-x-2">
+								<button on:click={() => openEditPlanModal(plan)} class="text-gray-500 hover:text-blue-600">
+									<Edit class="w-5 h-5" />
+								</button>
+								<button on:click={() => openDeletePlanModal(plan)} class="text-gray-500 hover:text-red-600">
+									<Trash2 class="w-5 h-5" />
+								</button>
 							</div>
-						{:else}
-							<p class="text-gray-500 dark:text-gray-400">这个阶段没有指定训练动作。</p>
-						{/each}
+						</div>
+						<p class="text-gray-600 dark:text-gray-400 mb-4 h-12 overflow-hidden">
+							{plan.description || '暂无描述'}
+						</p>
+						<div class="mt-4 border-t pt-4">
+							<h4 class="font-semibold mb-2">包含动作:</h4>
+							<ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+								{#each plan.plan_exercises.slice(0, 3) as item}
+									<li>{item.exercises.name}</li>
+								{/each}
+								{#if plan.plan_exercises.length > 3}
+									<li class="text-gray-500">...等 {plan.plan_exercises.length} 个动作</li>
+								{/if}
+							</ul>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/each}
+		</div>
 	{:else}
-		<!-- No plans available -->
-		<div
-			class="flex flex-col items-center justify-center h-64 bg-white dark:bg-gray-800 rounded-lg shadow-md"
-		>
-			<svg
-				class="w-16 h-16 text-gray-400 mb-4"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-				xmlns="http://www.w3.org/2000/svg"
-				><path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-				></path></svg
-			>
-			<p class="text-xl text-gray-500 dark:text-gray-400">暂无训练计划</p>
-			<p class="text-gray-400 dark:text-gray-500 mt-2">
-				您可以先创建一些示例训练计划来体验功能。
-			</p>
-			<div class="mt-4">
-				<a
-					href="/setup-demo"
-					class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-				>
-					<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-					</svg>
-					创建示例训练计划
-				</a>
-			</div>
+		<div class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+			<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+				<path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+			</svg>
+			<h3 class="mt-2 text-xl font-medium text-gray-900 dark:text-white">暂无训练计划</h3>
+			<p class="mt-1 text-gray-500">开始创建你的第一个训练计划吧！</p>
 		</div>
 	{/if}
-</div> 
+</div>
+
+{#if showCreateEditModal && PlanFormModal}
+	<svelte:component this={PlanFormModal} plan={selectedPlan} on:save={handlePlanSave} on:close={() => showCreateEditModal = false} />
+{/if}
+
+{#if showDeleteModal}
+	<div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+			<h2 class="text-lg font-bold mb-4">确认删除</h2>
+			<p>你确定要删除训练计划 "{planToDelete?.name}" 吗？此操作无法撤销。</p>
+			<div class="mt-6 flex justify-end space-x-4">
+				<button on:click={() => showDeleteModal = false} class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500">
+					取消
+				</button>
+				<button on:click={handlePlanDelete} class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+					删除
+				</button>
+			</div>
+		</div>
+	</div>
+{/if} 

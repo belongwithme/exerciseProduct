@@ -89,12 +89,17 @@ export const POST: RequestHandler = async ({ request, locals: { getSession } }) 
 	const planId = planData.id;
 
 	// 2. 准备要插入 plan_exercises 表的动作数据
-	const exercisesToInsert = exercises.map(ex => ({
+	const exercisesToInsert = exercises.map((ex, index) => ({
 		plan_id: planId,
 		exercise_id: ex.exercise_id,
-		target_sets: ex.target_sets,
-		target_reps: ex.target_reps,
-		notes: ex.notes,
+		target_sets: ex.target_sets || 3,
+		target_reps: ex.target_reps || 12,
+		target_weight_kg: ex.target_weight_kg || null,
+		rest_seconds: ex.rest_seconds || null,
+		exercise_order: ex.exercise_order || index + 1,
+		week_number: ex.week_number || null,
+		day_of_week: ex.day_of_week || 1,
+		notes: ex.notes || null
 	}));
 
 	// 3. 在 plan_exercises 表中插入与计划关联的动作
