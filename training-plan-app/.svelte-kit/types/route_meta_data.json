@@ -1,0 +1,103 @@
+{
+	"/": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/analysis": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/api/calendar-summary": [
+		"src/routes/api/calendar-summary/+server.ts"
+	],
+	"/api/exercises": [
+		"src/routes/api/exercises/+server.ts"
+	],
+	"/api/last-workout": [
+		"src/routes/api/last-workout/+server.ts"
+	],
+	"/api/logs": [
+		"src/routes/api/logs/+server.ts"
+	],
+	"/api/logs/[id]": [
+		"src/routes/api/logs/[id]/+server.ts"
+	],
+	"/api/plans": [
+		"src/routes/api/plans/+server.ts"
+	],
+	"/api/plans/[id]": [
+		"src/routes/api/plans/[id]/+server.ts"
+	],
+	"/api/plans/[plan_id]/versions": [
+		"src/routes/api/plans/[plan_id]/versions/+server.ts"
+	],
+	"/api/plans/[plan_id]/versions/[version_number]": [
+		"src/routes/api/plans/[plan_id]/versions/[version_number]/+server.ts"
+	],
+	"/api/setup-demo": [
+		"src/routes/api/setup-demo/+server.ts"
+	],
+	"/api/streak-days": [
+		"src/routes/api/streak-days/+server.ts"
+	],
+	"/auth": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/calendar": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/debug": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/exercises": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/log": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/plans": [
+		"src/routes/plans/+page.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/profile": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/progress": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/setup-demo": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/test": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/tools": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/tools/jump-calculator": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/tools/share": [
+		"src/routes/tools/share/+page.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/tools/timer": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	]
+}
