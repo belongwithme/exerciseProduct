@@ -1,377 +1,581 @@
-<!-- 连续打卡中断通知组件 -->
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
-	import { AlertTriangle, Heart, TrendingUp, Calendar, Zap } from 'lucide-svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { X, Flame, Trophy, Target, Star, Heart, Zap } from 'lucide-svelte';
 
-	const dispatch = createEventDispatcher();
-
-	// 组件属性
 	export let streakDays: number = 0;
-	export let lastWorkoutDate: string | null = null;
-	export let showNotification: boolean = true;
 
-	// 组件状态
-	let notificationType: 'streak_broken' | 'at_risk' | 'good_streak' | 'long_streak' | null = null;
-	let daysSinceLastWorkout = 0;
+	const dispatch = createEventDispatcher<{
+		close: void;
+	}>();
+
 	let isVisible = false;
 
-	/**
-	 * 计算距离上次训练的天数
-	 */
-	function calculateDaysSinceLastWorkout(): number {
-		if (!lastWorkoutDate) return 999; // 如果没有训练记录，返回一个大数
-		
-		const today = new Date();
-		const lastDate = new Date(lastWorkoutDate);
-		const diffTime = today.getTime() - lastDate.getTime();
-		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-		
-		return diffDays;
-	}
-
-	/**
-	 * 确定通知类型
-	 */
-	function determineNotificationType() {
-		daysSinceLastWorkout = calculateDaysSinceLastWorkout();
-
-		if (streakDays === 0 && daysSinceLastWorkout >= 2) {
-			// 连续打卡已中断且超过2天没训练
-			notificationType = 'streak_broken';
-		} else if (streakDays > 0 && daysSinceLastWorkout === 1) {
-			// 有连续记录但昨天没训练，连续性可能中断
-			notificationType = 'at_risk';
-		} else if (streakDays >= 1 && streakDays <= 6) {
-			// 短期连续记录，鼓励继续
-			notificationType = 'good_streak';
+	// 获取激励消息
+	function getMotivationMessage(): { title: string; message: string; emoji: string; gradient: string } {
+		if (streakDays >= 30) {
+			return {
+				title: `超级成就：连续训练 ${streakDays} 天！`,
+				message: '你已经成为真正的健身达人！这种坚持不懈的精神令人敬佩。',
+				emoji: '🏆',
+				gradient: 'from-yellow-400 via-orange-400 to-red-500'
+			};
+		} else if (streakDays >= 14) {
+			return {
+				title: `两周连胜：${streakDays} 天连续训练`,
+				message: '坚持不懈的精神正在转化为健康的生活习惯，继续保持！',
+				emoji: '💎',
+				gradient: 'from-purple-400 via-pink-400 to-red-400'
+			};
 		} else if (streakDays >= 7) {
-			// 长期连续记录，给予认可
-			notificationType = 'long_streak';
-		} else {
-			notificationType = null;
+			return {
+				title: `一周冠军：${streakDays} 天连续打卡`,
+				message: '恭喜你完成了一周的连续训练！这是培养习惯的重要里程碑。',
+				emoji: '🔥',
+				gradient: 'from-red-400 via-pink-400 to-purple-500'
+			};
+		} else if (streakDays >= 3) {
+			return {
+				title: `连续之星：${streakDays} 天坚持训练`,
+				message: '很棒的开始！坚持下去，你正在养成优秀的健身习惯。',
+				emoji: '⭐',
+				gradient: 'from-blue-400 via-indigo-400 to-purple-500'
+			};
 		}
-
-		// 只有在有意义的通知时才显示
-		isVisible = showNotification && notificationType !== null;
+		
+		return {
+			title: `连续训练 ${streakDays} 天`,
+			message: '每一天的坚持都是向目标迈进的一步，继续加油！',
+			emoji: '🎯',
+			gradient: 'from-green-400 via-blue-400 to-indigo-500'
+		};
 	}
 
-	/**
-	 * 获取通知配置
-	 */
-	function getNotificationConfig() {
-		switch (notificationType) {
-			case 'streak_broken':
-				return {
-					type: 'warning',
-					icon: AlertTriangle,
-					title: '连续打卡已中断',
-					message: `已经${daysSinceLastWorkout}天没有训练了，重新开始永远不晚！`,
-					encouragement: [
-						'每一次重新开始都是一个新的机会 💪',
-						'小步前进胜过原地踏步 🚀',
-						'今天就是重新开始的最佳时机！'
-					],
-					actionText: '开始训练',
-					bgColor: 'bg-orange-50',
-					borderColor: 'border-orange-200',
-					textColor: 'text-orange-800',
-					iconColor: 'text-orange-600'
-				};
-
-			case 'at_risk':
-				return {
-					type: 'alert',
-					icon: Zap,
-					title: '连续记录面临中断',
-					message: `您已经连续训练${streakDays}天，昨天没有训练可能会中断连续记录！`,
-					encouragement: [
-						'坚持了这么久，不要轻易放弃 🔥',
-						'今天训练一下，保持连续记录',
-						'习惯的力量就是持续的小行动'
-					],
-					actionText: '继续打卡',
-					bgColor: 'bg-yellow-50',
-					borderColor: 'border-yellow-200',
-					textColor: 'text-yellow-800',
-					iconColor: 'text-yellow-600'
-				};
-
-			case 'good_streak':
-				return {
-					type: 'success',
-					icon: TrendingUp,
-					title: '连续训练进行中',
-					message: `太棒了！您已经连续训练${streakDays}天，习惯正在养成中！`,
-					encouragement: [
-						'持续的努力正在带来改变 🌟',
-						'每一天的坚持都值得赞赏',
-						'继续保持这个美好的节奏！'
-					],
-					actionText: '查看进度',
-					bgColor: 'bg-green-50',
-					borderColor: 'border-green-200',
-					textColor: 'text-green-800',
-					iconColor: 'text-green-600'
-				};
-
-			case 'long_streak':
-				return {
-					type: 'celebration',
-					icon: Heart,
-					title: '连续训练成就',
-					message: `令人佩服！您已经连续训练${streakDays}天，这是真正的毅力体现！`,
-					encouragement: [
-						'您的坚持令人敬佩！🎉',
-						'这样的毅力一定会带来惊人的成果',
-						'您已经证明了自己的决心和毅力'
-					],
-					actionText: '分享成就',
-					bgColor: 'bg-purple-50',
-					borderColor: 'border-purple-200',
-					textColor: 'text-purple-800',
-					iconColor: 'text-purple-600'
-				};
-
-			default:
-				return null;
-		}
+	// 获取下一个目标
+	function getNextGoal(): { target: number; description: string } {
+		if (streakDays < 3) return { target: 3, description: '连续 3 天' };
+		if (streakDays < 7) return { target: 7, description: '连续 1 周' };
+		if (streakDays < 14) return { target: 14, description: '连续 2 周' };
+		if (streakDays < 30) return { target: 30, description: '连续 1 个月' };
+		return { target: 60, description: '连续 2 个月' };
 	}
 
-	/**
-	 * 处理行动按钮点击
-	 */
-	function handleAction() {
-		switch (notificationType) {
-			case 'streak_broken':
-			case 'at_risk':
-				dispatch('startWorkout');
-				break;
-			case 'good_streak':
-				dispatch('viewProgress');
-				break;
-			case 'long_streak':
-				dispatch('shareAchievement', { streakDays });
-				break;
-		}
+	// 计算进度百分比
+	function getProgressPercentage(): number {
+		const goal = getNextGoal();
+		return Math.min((streakDays / goal.target) * 100, 100);
 	}
 
-	/**
-	 * 关闭通知
-	 */
-	function handleClose() {
+	// 获取成就徽章
+	function getAchievementLevel(): string {
+		if (streakDays >= 30) return 'legendary';
+		if (streakDays >= 14) return 'expert';
+		if (streakDays >= 7) return 'advanced';
+		if (streakDays >= 3) return 'intermediate';
+		return 'beginner';
+	}
+
+	function closeNotification() {
 		isVisible = false;
-		dispatch('close');
+		setTimeout(() => {
+			dispatch('close');
+		}, 300);
 	}
 
-	/**
-	 * 获取随机鼓励语句
-	 */
-	function getRandomEncouragement(encouragements: string[]): string {
-		const randomIndex = Math.floor(Math.random() * encouragements.length);
-		return encouragements[randomIndex];
-	}
-
-	// 响应式更新
-	$: {
-		if (showNotification) {
-			determineNotificationType();
+	// 点击背景关闭
+	function handleBackdropClick(event: MouseEvent) {
+		if (event.target === event.currentTarget) {
+			closeNotification();
 		}
 	}
 
-	$: config = getNotificationConfig();
-	$: randomEncouragement = config ? getRandomEncouragement(config.encouragement) : '';
+	// 按键处理
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			closeNotification();
+		}
+	}
 
+	// 自动关闭通知
 	onMount(() => {
-		determineNotificationType();
+		isVisible = true;
+		
+		// 6秒后自动关闭
+		const timer = setTimeout(() => {
+			if (isVisible) {
+				closeNotification();
+			}
+		}, 6000);
+
+		return () => clearTimeout(timer);
 	});
+
+	$: motivationData = getMotivationMessage();
+	$: nextGoal = getNextGoal();
+	$: progressPercentage = getProgressPercentage();
+	$: achievementLevel = getAchievementLevel();
 </script>
 
-{#if isVisible && config}
-	<!-- 通知卡片 -->
-	<div class="notification-card {config.bgColor} {config.borderColor} {config.textColor}" role="alert">
-		<!-- 头部区域 -->
-		<div class="notification-header">
-			<div class="flex items-center">
-				<svelte:component this={config.icon} class="notification-icon {config.iconColor}" />
-				<h3 class="notification-title">{config.title}</h3>
-			</div>
+<!-- 通知背景 -->
+{#if isVisible}
+	<div 
+		class="notification-backdrop"
+		on:click={handleBackdropClick}
+		on:keydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="notification-title"
+		tabindex="0"
+	>
+		<!-- 通知卡片 -->
+		<div class="notification-card achievement-{achievementLevel}">
+			<!-- 关闭按钮 -->
 			<button 
-				class="p-1 rounded hover:bg-black hover:bg-opacity-10 transition-colors"
-				on:click={handleClose}
+				class="close-btn"
+				on:click={closeNotification}
 				aria-label="关闭通知"
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-				</svg>
+				<X class="w-5 h-5" />
 			</button>
-		</div>
 
-		<!-- 主要消息 -->
-		<div class="notification-content">
-			<p class="notification-message">{config.message}</p>
-			
-			<!-- 鼓励信息 -->
-			<div class="encouragement-section">
-				<div class="encouragement-text">
-					{randomEncouragement}
+			<!-- 成就图标 -->
+			<div class="achievement-icon">
+				<div class="icon-background bg-gradient-to-br {motivationData.gradient}">
+					<span class="achievement-emoji">{motivationData.emoji}</span>
+				</div>
+				<div class="streak-ring">
+					<Flame class="w-6 h-6 text-orange-500" />
 				</div>
 			</div>
 
-			<!-- 统计信息 -->
-			{#if notificationType === 'good_streak' || notificationType === 'long_streak'}
-				<div class="stats-section">
-					<div class="stat-item">
-						<Calendar class="w-4 h-4 {config.iconColor}" />
-						<span>连续 {streakDays} 天</span>
-					</div>
-					{#if daysSinceLastWorkout === 0}
-						<div class="stat-item">
-							<Zap class="w-4 h-4 text-green-600" />
-							<span>今日已完成</span>
-						</div>
-					{/if}
-				</div>
-			{/if}
+			<!-- 内容区域 -->
+			<div class="content-area">
+				<h2 id="notification-title" class="achievement-title">
+					{motivationData.title}
+				</h2>
+				<p class="achievement-message">
+					{motivationData.message}
+				</p>
 
-			<!-- 行动区域 -->
-			<div class="action-section">
-				<button 
-					class="px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 {config.type}"
-					on:click={handleAction}
-				>
-					{config.actionText}
-				</button>
-				
-				{#if notificationType === 'streak_broken' || notificationType === 'at_risk'}
-					<button 
-						class="secondary-button"
-						on:click={() => dispatch('setReminder')}
-					>
-						设置提醒
-					</button>
-				{/if}
+				<!-- 进度条 -->
+				<div class="progress-section">
+					<div class="progress-info">
+						<span class="progress-label">下一个目标: {nextGoal.description}</span>
+						<span class="progress-value">{streakDays}/{nextGoal.target}</span>
+					</div>
+					<div class="progress-bar">
+						<div 
+							class="progress-fill bg-gradient-to-r {motivationData.gradient}"
+							style="width: {progressPercentage}%"
+						></div>
+					</div>
+				</div>
+
+				<!-- 统计信息 -->
+				<div class="stats-grid">
+					<div class="stat-item">
+						<div class="stat-icon">
+							<Flame class="w-4 h-4 text-orange-500" />
+						</div>
+						<div class="stat-content">
+							<div class="stat-value">{streakDays}</div>
+							<div class="stat-label">连续天数</div>
+						</div>
+					</div>
+					
+					<div class="stat-item">
+						<div class="stat-icon">
+							<Target class="w-4 h-4 text-blue-500" />
+						</div>
+						<div class="stat-content">
+							<div class="stat-value">{nextGoal.target - streakDays}</div>
+							<div class="stat-label">距离目标</div>
+						</div>
+					</div>
+					
+					<div class="stat-item">
+						<div class="stat-icon">
+							<Heart class="w-4 h-4 text-red-500" />
+						</div>
+						<div class="stat-content">
+							<div class="stat-value">{Math.round(progressPercentage)}%</div>
+							<div class="stat-label">完成度</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 鼓励语句 -->
+				<div class="encouragement-section">
+					<div class="encouragement-quote">
+						"坚持不懈，直到成功！"
+					</div>
+					<div class="encouragement-subtext">
+						你的每一天坚持都在创造更好的自己
+					</div>
+				</div>
+			</div>
+
+			<!-- 装饰元素 -->
+			<div class="decoration-elements">
+				<div class="decoration-particle particle-1">✨</div>
+				<div class="decoration-particle particle-2">🌟</div>
+				<div class="decoration-particle particle-3">💫</div>
+				<div class="decoration-particle particle-4">⭐</div>
 			</div>
 		</div>
 	</div>
 {/if}
 
 <style>
+	.notification-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		z-index: 50;
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
 	.notification-card {
-		@apply border rounded-lg p-6 mb-6 shadow-md;
-		animation: slideIn 0.3s ease-out;
+		position: relative;
+		background-color: white;
+		border-radius: 1rem;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		width: 100%;
+		max-width: 28rem;
+		padding: 1.5rem;
+		overflow: hidden;
+		animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
 	@keyframes slideIn {
 		from {
 			opacity: 0;
-			transform: translateY(-10px);
+			transform: translateY(-30px) scale(0.9);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0);
+			transform: translateY(0) scale(1);
 		}
 	}
 
-	.notification-header {
-		@apply flex justify-between items-start mb-4;
+	.close-btn {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		padding: 0.5rem;
+		border-radius: 9999px;
+		transition: background-color 0.2s;
+		color: #9ca3af;
+		z-index: 10;
+		background: none;
+		border: none;
+		cursor: pointer;
 	}
 
-	.notification-icon {
-		@apply w-6 h-6 mr-3 flex-shrink-0;
+	.close-btn:hover {
+		background-color: #f3f4f6;
+		color: #4b5563;
 	}
 
-	.notification-title {
-		@apply text-lg font-semibold;
+	.achievement-icon {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		margin-bottom: 1.5rem;
 	}
 
-	.close-button {
-		/* @apply p-1 rounded hover:bg-black hover:bg-opacity-10 transition-colors; */
+	.icon-background {
+		width: 5rem;
+		height: 5rem;
+		border-radius: 9999px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+		position: relative;
+		animation: pulse 2s infinite;
 	}
 
-	.notification-content {
-		@apply space-y-4;
+	@keyframes pulse {
+		0%, 100% { transform: scale(1); }
+		50% { transform: scale(1.05); }
 	}
 
-	.notification-message {
-		@apply text-base leading-relaxed;
+	.achievement-emoji {
+		font-size: 2.25rem;
+		line-height: 1;
 	}
 
-	.encouragement-section {
-		@apply py-3 px-4 bg-white bg-opacity-50 rounded-lg;
+	.streak-ring {
+		position: absolute;
+		bottom: -0.25rem;
+		right: -0.25rem;
+		width: 2rem;
+		height: 2rem;
+		background-color: white;
+		border-radius: 9999px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 	}
 
-	.encouragement-text {
-		@apply text-sm font-medium italic text-center;
+	.content-area {
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
 
-	.stats-section {
-		@apply flex items-center space-x-4 text-sm;
+	.achievement-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #111827;
+		line-height: 1.25;
+	}
+
+	.achievement-message {
+		color: #4b5563;
+		line-height: 1.625;
+	}
+
+	.progress-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.progress-info {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.875rem;
+	}
+
+	.progress-label {
+		color: #4b5563;
+		font-weight: 500;
+	}
+
+	.progress-value {
+		color: #1f2937;
+		font-weight: 700;
+	}
+
+	.progress-bar {
+		width: 100%;
+		height: 0.5rem;
+		background-color: #e5e7eb;
+		border-radius: 9999px;
+		overflow: hidden;
+	}
+
+	.progress-fill {
+		height: 100%;
+		transition: all 1s ease-out;
+		border-radius: 9999px;
+		animation: fillProgress 1.5s ease-out;
+	}
+
+	@keyframes fillProgress {
+		from { width: 0%; }
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
 	}
 
 	.stat-item {
-		@apply flex items-center space-x-1;
+		background-color: #f9fafb;
+		border-radius: 0.5rem;
+		padding: 0.75rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
-	.action-section {
-		@apply flex items-center space-x-3 pt-2;
+	.stat-icon {
+		padding: 0.5rem;
+		background-color: white;
+		border-radius: 9999px;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 	}
 
-	.action-button {
-		/* @apply px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2; */
+	.stat-content {
+		text-align: center;
 	}
 
-	.action-button.warning {
-		@apply bg-orange-600 text-white focus:ring-orange-500;
-	}
-	.action-button.warning:hover {
-		@apply bg-orange-700;
-	}
-
-	.action-button.alert {
-		@apply bg-yellow-600 text-white focus:ring-yellow-500;
-	}
-	.action-button.alert:hover {
-		@apply bg-yellow-700;
+	.stat-value {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: #111827;
 	}
 
-	.action-button.success {
-		@apply bg-green-600 text-white focus:ring-green-500;
-	}
-	.action-button.success:hover {
-		@apply bg-green-700;
+	.stat-label {
+		font-size: 0.75rem;
+		color: #4b5563;
 	}
 
-	.action-button.celebration {
-		@apply bg-purple-600 text-white focus:ring-purple-500;
-	}
-	.action-button.celebration:hover {
-		@apply bg-purple-700;
-	}
-
-	.secondary-button {
-		@apply px-4 py-2 border border-current rounded-lg font-medium transition-colors;
-	}
-	.secondary-button:hover {
-		@apply bg-black bg-opacity-5;
+	.encouragement-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
-	/* 移动端优化 */
-	@media (max-width: 640px) {
+	.encouragement-quote {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1f2937;
+		font-style: italic;
+	}
+
+	.encouragement-subtext {
+		font-size: 0.875rem;
+		color: #6b7280;
+	}
+
+	.decoration-elements {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		pointer-events: none;
+		overflow: hidden;
+	}
+
+	.decoration-particle {
+		position: absolute;
+		font-size: 1.5rem;
+		opacity: 0.7;
+		animation: float 3s ease-in-out infinite;
+	}
+
+	.particle-1 {
+		top: 10%;
+		left: 10%;
+		animation-delay: 0s;
+	}
+
+	.particle-2 {
+		top: 20%;
+		right: 15%;
+		animation-delay: 0.5s;
+	}
+
+	.particle-3 {
+		bottom: 25%;
+		left: 15%;
+		animation-delay: 1s;
+	}
+
+	.particle-4 {
+		bottom: 15%;
+		right: 10%;
+		animation-delay: 1.5s;
+	}
+
+	@keyframes float {
+		0%, 100% {
+			transform: translateY(0px) rotate(0deg);
+			opacity: 0.7;
+		}
+		50% {
+			transform: translateY(-10px) rotate(10deg);
+			opacity: 1;
+		}
+	}
+
+	/* 成就等级样式 */
+	.achievement-legendary {
+		border: 4px solid #fcd34d;
+		background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%);
+	}
+
+	.achievement-expert {
+		border: 4px solid #c4b5fd;
+		background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #8b5cf6 100%);
+	}
+
+	.achievement-advanced {
+		border: 4px solid #fca5a5;
+		background: linear-gradient(135deg, #fee2e2 0%, #fecaca 50%, #ef4444 100%);
+	}
+
+	.achievement-intermediate {
+		border: 4px solid #93c5fd;
+		background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #3b82f6 100%);
+	}
+
+	.achievement-beginner {
+		border: 4px solid #86efac;
+		background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #10b981 100%);
+	}
+
+	/* 响应式设计 */
+	@media (max-width: 480px) {
 		.notification-card {
-			@apply p-4;
+			margin: 0 0.5rem;
+			padding: 1rem;
 		}
 
-		.notification-title {
-			@apply text-base;
+		.achievement-title {
+			font-size: 1.25rem;
 		}
 
-		.action-section {
-			@apply flex-col items-stretch space-y-2 space-x-0;
+		.achievement-emoji {
+			font-size: 1.875rem;
 		}
 
-		.action-button,
-		.secondary-button {
-			@apply w-full justify-center;
+		.icon-background {
+			width: 4rem;
+			height: 4rem;
+		}
+
+		.stats-grid {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+
+		.stat-item {
+			flex-direction: row;
+			gap: 0.75rem;
+			justify-content: flex-start;
+			padding: 0.5rem;
+		}
+	}
+
+	/* 可访问性 */
+	@media (prefers-reduced-motion: reduce) {
+		.notification-card {
+			animation: none;
+		}
+
+		.icon-background {
+			animation: none;
+		}
+
+		.progress-fill {
+			animation: none;
+		}
+
+		.decoration-particle {
+			animation: none;
 		}
 	}
 </style> 

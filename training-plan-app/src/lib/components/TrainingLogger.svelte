@@ -1,511 +1,373 @@
-<!--
-  @component
-  TrainingLogger
-  ===============
-  A component for logging workout sessions.
-  It allows creating complex logs with multiple exercises and sets,
-  and includes a feature to copy the most recent workout.
--->
+<!-- 训练日志记录器组件 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import { supabase } from '$lib/utils/supabaseClient';
-	import Fa from 'svelte-fa';
-	import { faPlus, faTrash, faCopy, faGripLines } from '@fortawesome/free-solid-svg-icons';
-	import { dndzone } from 'svelte-dnd-action';
-
-	// State variables
-	let exercises: any[] = [];
-	let logs: any[] = [];
-	let loading = true;
-	let error: string | null = null;
-	let plan_version_id: number | null = null;
-
-	let nextSetId = 1; // For unique IDs for dnd keys
-	const flipDurationMs = 200;
-	const statusOptions = ['状态良好', '疲劳', '低效率'] as const;
-
-	// New data structure for a full workout log
-	let workoutData = {
-		date: new Date().toISOString().slice(0, 10),
-		status: statusOptions[0],
-		mood: '',
-		exercises: [
-			{
-				exercise_id: null as number | null,
-				name: '',
-				sets: [
-					{
-						id: nextSetId++,
-						set_number: 1,
-						reps: null as number | null,
-						weight_kg: null as number | null,
-						notes: ''
-					}
-				]
-			}
-		]
-	};
-
-	// Helper functions to manage the dynamic form
-	function addExercise() {
-		workoutData.exercises.push({
-			exercise_id: null,
-			name: '',
-			sets: [{ id: nextSetId++, set_number: 1, reps: null, weight_kg: null, notes: '' }]
-		});
-		workoutData = { ...workoutData }; // Trigger Svelte reactivity
-	}
-
-	function removeExercise(index: number) {
-		workoutData.exercises.splice(index, 1);
-		workoutData = { ...workoutData };
-	}
-
-	function addSet(exerciseIndex: number) {
-		const exercise = workoutData.exercises[exerciseIndex];
-		exercise.sets.push({
-			id: nextSetId++,
-			set_number: exercise.sets.length + 1,
-			reps: null,
-			weight_kg: null,
-			notes: ''
-		});
-		workoutData = { ...workoutData };
-	}
-
-	function removeSet(exerciseIndex: number, setIndex: number) {
-		const exercise = workoutData.exercises[exerciseIndex];
-		exercise.sets.splice(setIndex, 1);
-		exercise.sets.forEach((set, i) => (set.set_number = i + 1)); // Re-number sets
-		workoutData = { ...workoutData };
-	}
-
-	function handleDndSort(e: CustomEvent, exerciseIndex: number) {
-		const { items } = e.detail;
-		const exercise = workoutData.exercises[exerciseIndex];
-		exercise.sets = items;
-		exercise.sets.forEach((set, i) => (set.set_number = i + 1));
-		// 使用更精确的更新方式，避免触发整个表单重新渲染
-		workoutData = { ...workoutData };
-	}
-
-	function handleExerciseSelection(event: Event, exerciseIndex: number) {
-		const select = event.target as HTMLSelectElement;
-		const exerciseId = parseInt(select.value, 10);
-		
-		// 验证选择的ID是否有效
-		if (isNaN(exerciseId) || exerciseId <= 0) {
-			console.log('无效的动作ID:', select.value);
-			return;
-		}
-		
-		const selectedExercise = exercises.find((e) => e.id === exerciseId);
-		if (selectedExercise) {
-			console.log('选择动作:', selectedExercise.name, 'ID:', selectedExercise.id);
-			workoutData.exercises[exerciseIndex].exercise_id = selectedExercise.id;
-			workoutData.exercises[exerciseIndex].name = selectedExercise.name;
-			// 确保状态更新能正确触发响应式更新
-			workoutData = { ...workoutData };
-		} else {
-			console.log('未找到动作，ID:', exerciseId);
-		}
-	}
-
-	/**
-	 * Fetches the list of available exercises from the database.
-	 */
-	async function getExercises() {
-		const { data, error: fetchError } = await supabase
-			.from('exercises')
-			.select('id, name')
-			.order('name');
-
-		if (fetchError) {
-			error = fetchError.message;
-			console.error('Error fetching exercises:', fetchError);
-		} else {
-			exercises = data || [];
-		}
-	}
-
-	/**
-	 * Fetches the recent training logs. This is a simplified view showing raw sets.
-	 */
-	async function getLogs() {
-		const { data, error: fetchError } = await supabase
-			.from('logged_sets')
-			.select(`*, exercises (name)`)
-			.order('created_at', { ascending: false })
-			.limit(10);
-
-		if (fetchError) {
-			error = fetchError.message;
-			console.error('Error fetching logs:', fetchError);
-		} else {
-			logs = data || [];
-		}
-	}
-
-	/**
-	 * Finds the ID of the most recent workout log for the current user.
-	 */
-	async function getLastLogId() {
-		const {
-			data: { user }
-		} = await supabase.auth.getUser();
-		if (!user) return null;
-
-		const { data, error } = await supabase
-			.from('workout_logs')
-			.select('id')
-			.eq('user_id', user.id)
-			.order('date', { ascending: false })
-			.order('created_at', { ascending: false })
-			.limit(1)
-			.single();
-
-		if (error && error.code !== 'PGRST116') {
-			// Ignore "exact one row" error if no logs exist
-			console.error('Error fetching last log id:', error);
-			return null;
-		}
-		return data ? data.id : null;
-	}
-
-	/**
-	 * Copies the exercises and sets from the last workout.
-	 */
-	async function copyLastWorkout() {
-		loading = true;
-		error = null;
-		const lastLogId = await getLastLogId();
-
-		if (!lastLogId) {
-			alert('没有找到最近的训练记录用于复制。');
-			loading = false;
-			return;
-		}
-
-		const { data, error: rpcError } = await supabase.rpc('copy_workout_from_log', {
-			previous_log_id: lastLogId
-		});
-
-		if (rpcError || !data) {
-			error = rpcError ? rpcError.message : '复制失败，未收到数据。';
-			console.error('Error copying workout:', error);
-		} else if (data) {
-			if (data.error) {
-				error = data.error;
-			} else if (Array.isArray(data) && data.length > 0) {
-				workoutData.exercises = data.map((ex: any) => ({
-					exercise_id: ex.exercise_id,
-					name: ex.name,
-					sets: ex.sets.map((s: any) => ({
-						id: nextSetId++,
-						set_number: s.set_number,
-						reps: s.reps,
-						weight_kg: s.weight_kg,
-						notes: s.notes || ''
-					}))
-				}));
-				alert('已成功复制上次训练内容！');
-			} else {
-				alert('复制成功，但上次训练没有任何动作记录。');
-				workoutData.exercises = []; // Clear current exercises
-			}
-		}
-		loading = false;
-	}
-
-	/**
-	 * Handles form submission to create a new, detailed workout log.
-	 */
-	async function handleSubmit() {
-		// 更精确的验证逻辑
-		if (workoutData.exercises.some((e) => !e.exercise_id || e.exercise_id === null)) {
-			console.log('验证失败的动作:', workoutData.exercises.filter(e => !e.exercise_id || e.exercise_id === null));
-			alert('请为所有动作选择一个有效的训练项目。');
-			return;
-		}
-
-		loading = true;
-
-		try {
-			const {
-				data: { user }
-			} = await supabase.auth.getUser();
-			if (!user) throw new Error('用户未登录');
-
-			const insertData: { [key: string]: any } = {
-				user_id: user.id,
-				date: workoutData.date,
-				status: workoutData.status,
-				mood: workoutData.mood
-			};
-
-			if (plan_version_id) {
-				insertData.plan_version_id = plan_version_id;
-			}
-
-			const { data: logData, error: logError } = await supabase
-				.from('workout_logs')
-				.insert(insertData)
-				.select('id')
-				.single();
-
-			if (logError) throw logError;
-			if (!logData) throw new Error('Failed to create log entry.');
-
-			const newLogId = (logData as any).id;
-
-			for (const exercise of workoutData.exercises) {
-				for (const set of exercise.sets) {
-					if (set.reps !== null && set.weight_kg !== null) {
-						const { error: setError } = await supabase.from('logged_sets').insert({
-							log_id: newLogId,
-							exercise_id: exercise.exercise_id,
-							set_number: set.set_number,
-							reps: set.reps,
-							weight_kg: set.weight_kg,
-							notes: set.notes
-						});
-						if (setError) throw setError;
-					}
-				}
-			}
-
-			// Reset form
-			workoutData.date = new Date().toISOString().slice(0, 10);
-			workoutData.status = statusOptions[0];
-			workoutData.mood = '';
-			workoutData.exercises = [
-				{
-					exercise_id: null,
-					name: '',
-					sets: [{ id: nextSetId++, set_number: 1, reps: null, weight_kg: null, notes: '' }]
-				}
-			];
-
-			await getLogs();
-			alert('训练记录已成功添加！');
-		} catch (e: any) {
-			error = e.message;
-			console.error('Error creating log:', e);
-			alert('添加记录失败: ' + e.message);
-		} finally {
-			loading = false;
-		}
-	}
-
-	onMount(async () => {
-		const urlParams = $page.url.searchParams;
-		const versionId = urlParams.get('plan_version_id');
-		if (versionId) {
-			plan_version_id = parseInt(versionId, 10);
-		}
-
-		loading = true;
-		await Promise.all([getExercises(), getLogs()]);
-		loading = false;
-	});
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
+  
+  export let isOpen = false;
+  
+     // 表单数据
+   let workoutData = {
+     date: new Date().toISOString().split('T')[0],
+     exercises: [] as any[],
+     duration: 0,
+     notes: '',
+     type: 'strength'
+   };
+  
+  // 当前添加的运动
+  let currentExercise = {
+    name: '',
+    sets: '',
+    reps: '',
+    weight: '',
+    notes: ''
+  };
+  
+  let isSaving = false;
+  let error = '';
+  
+  // 预设运动列表
+  const exercisePresets = [
+    '深蹲', '硬拉', '卧推', '引体向上', '俯卧撑',
+    '跳跃训练', '冲刺跑', '平板支撑', '弓步蹲', '臀桥'
+  ];
+  
+  function addExercise() {
+    if (!currentExercise.name.trim()) {
+      error = '请输入运动名称';
+      return;
+    }
+    
+    workoutData.exercises.push({
+      ...currentExercise,
+      id: Date.now()
+    });
+    
+    // 重置当前运动
+    currentExercise = {
+      name: '',
+      sets: '',
+      reps: '',
+      weight: '',
+      notes: ''
+    };
+    
+    error = '';
+  }
+  
+     function removeExercise(exerciseId: any) {
+     workoutData.exercises = workoutData.exercises.filter(ex => ex.id !== exerciseId);
+   }
+   
+   function selectPresetExercise(exerciseName: string) {
+     currentExercise.name = exerciseName;
+   }
+  
+  async function saveWorkout() {
+    try {
+      isSaving = true;
+      error = '';
+      
+      // 验证
+      if (workoutData.exercises.length === 0) {
+        error = '请至少添加一个运动';
+        return;
+      }
+      
+      if (!workoutData.duration || workoutData.duration <= 0) {
+        error = '请输入有效的训练时长';
+        return;
+      }
+      
+      // 模拟保存到数据库
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 触发保存事件
+      dispatch('save', {
+        ...workoutData,
+        id: Date.now(),
+        created_at: new Date().toISOString(),
+        exercises_count: workoutData.exercises.length,
+        total_sets: workoutData.exercises.reduce((total, ex) => total + parseInt(ex.sets || '0'), 0)
+      });
+      
+      // 重置表单
+      workoutData = {
+        date: new Date().toISOString().split('T')[0],
+        exercises: [],
+        duration: 0,
+        notes: '',
+        type: 'strength'
+      };
+      
+      isOpen = false;
+      
+    } catch (err) {
+      error = '保存失败，请重试';
+    } finally {
+      isSaving = false;
+    }
+  }
+  
+  function closeModal() {
+    isOpen = false;
+    dispatch('close');
+  }
 </script>
 
-<div class="p-4 bg-white rounded-lg shadow-md">
-	<div class="flex justify-between items-center mb-4">
-		<h2 class="text-2xl font-bold">记录训练</h2>
-		<button
-			on:click={copyLastWorkout}
-			disabled={loading}
-			class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400"
-		>
-			<Fa icon={faCopy} />
-			<span>复制上次训练</span>
-		</button>
-	</div>
+{#if isOpen}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">记录训练</h2>
+          <button
+            on:click={closeModal}
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-	{#if error}
-		<div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
-			<span class="font-medium">错误:</span>
-			{error}
-		</div>
-	{/if}
+        {#if error}
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p class="text-red-700 text-sm">{error}</p>
+          </div>
+        {/if}
 
-	<!-- Refactored Training Log Form -->
-	<form on:submit|preventDefault={handleSubmit} class="space-y-6">
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-			<div>
-				<label for="date" class="block text-sm font-medium text-gray-700">日期</label>
-				<input
-					type="date"
-					id="date"
-					bind:value={workoutData.date}
-					class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					required
-				/>
-			</div>
-			<div>
-				<label for="status" class="block text-sm font-medium text-gray-700"
-					>训练后状态</label
-				>
-				<select
-					id="status"
-					bind:value={workoutData.status}
-					class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-				>
-					{#each statusOptions as option}
-						<option value={option}>{option}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label for="mood" class="block text-sm font-medium text-gray-700"
-					>心情/感想 <span class="text-gray-400">(可选)</span></label
-				>
-				<input
-					type="text"
-					id="mood"
-					bind:value={workoutData.mood}
-					class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					placeholder="今天感觉棒极了！✨"
-				/>
-			</div>
-		</div>
+        <form on:submit|preventDefault={saveWorkout} class="space-y-6">
+          <!-- 基本信息 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                训练日期
+              </label>
+              <input
+                id="date"
+                type="date"
+                bind:value={workoutData.date}
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+              />
+            </div>
+            
+            <div>
+              <label for="duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                训练时长 (分钟)
+              </label>
+              <input
+                id="duration"
+                type="number"
+                bind:value={workoutData.duration}
+                min="1"
+                max="300"
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="60"
+                required
+              />
+            </div>
+          </div>
 
-		{#if plan_version_id}
-			<div class="p-3 bg-blue-100 text-blue-800 rounded-md text-center">
-				正在从计划版本 <span class="font-bold">#{plan_version_id}</span> 记录训练。
-			</div>
-		{/if}
+          <div>
+            <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              训练类型
+            </label>
+            <select
+              id="type"
+              bind:value={workoutData.type}
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="strength">力量训练</option>
+              <option value="cardio">有氧训练</option>
+              <option value="flexibility">柔韧性训练</option>
+              <option value="sports">运动训练</option>
+            </select>
+          </div>
 
-		<hr />
+          <!-- 添加运动 -->
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">添加运动</h3>
+            
+            <!-- 预设运动快捷选择 -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                常用运动
+              </label>
+              <div class="flex flex-wrap gap-2">
+                {#each exercisePresets as preset}
+                  <button
+                    type="button"
+                    on:click={() => selectPresetExercise(preset)}
+                    class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    {preset}
+                  </button>
+                {/each}
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label for="exercise-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  运动名称 *
+                </label>
+                <input
+                  id="exercise-name"
+                  type="text"
+                  bind:value={currentExercise.name}
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="深蹲"
+                />
+              </div>
+              
+              <div>
+                <label for="sets" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  组数
+                </label>
+                <input
+                  id="sets"
+                  type="number"
+                  bind:value={currentExercise.sets}
+                  min="1"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="3"
+                />
+              </div>
+              
+              <div>
+                <label for="reps" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  重复次数
+                </label>
+                <input
+                  id="reps"
+                  type="text"
+                  bind:value={currentExercise.reps}
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="12"
+                />
+              </div>
+              
+              <div>
+                <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  重量 (kg)
+                </label>
+                <input
+                  id="weight"
+                  type="number"
+                  bind:value={currentExercise.weight}
+                  min="0"
+                  step="0.5"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="60"
+                />
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="exercise-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                运动备注
+              </label>
+              <input
+                id="exercise-notes"
+                type="text"
+                bind:value={currentExercise.notes}
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="感觉、技巧提醒等"
+              />
+            </div>
+            
+            <button
+              type="button"
+              on:click={addExercise}
+              class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              添加运动
+            </button>
+          </div>
 
-		{#each workoutData.exercises as exercise, exerciseIndex}
-			<div class="p-4 border border-gray-200 rounded-lg space-y-4 relative">
-				<button
-					type="button"
-					on:click={() => removeExercise(exerciseIndex)}
-					class="absolute top-2 right-2 text-red-500 hover:text-red-700"
-					aria-label="删除动作"
-				>
-					<Fa icon={faTrash} />
-				</button>
+          <!-- 已添加的运动列表 -->
+          {#if workoutData.exercises.length > 0}
+            <div class="border-t pt-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">训练内容</h3>
+              <div class="space-y-3">
+                {#each workoutData.exercises as exercise}
+                  <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                    <div class="flex-1">
+                      <div class="font-medium text-gray-900 dark:text-white">{exercise.name}</div>
+                      <div class="text-sm text-gray-600 dark:text-gray-400">
+                        {#if exercise.sets && exercise.reps}
+                          {exercise.sets} 组 × {exercise.reps} 次
+                        {/if}
+                        {#if exercise.weight}
+                          · {exercise.weight}kg
+                        {/if}
+                        {#if exercise.notes}
+                          · {exercise.notes}
+                        {/if}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      on:click={() => removeExercise(exercise.id)}
+                      class="text-red-500 hover:text-red-700 ml-3"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
 
-				<div class="grid grid-cols-1 gap-4">
-					<div>
-						<label for="exercise-{exerciseIndex}" class="block text-sm font-medium text-gray-700"
-							>动作 #{exerciseIndex + 1}</label
-						>
-						<select
-							id="exercise-{exerciseIndex}"
-							bind:value={exercise.exercise_id}
-							on:change={(e) => handleExerciseSelection(e, exerciseIndex)}
-							class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-							required
-						>
-							<option value="" disabled>选择一个动作</option>
-							{#each exercises as ex}
-								<option value={ex.id}>{ex.name}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
+          <!-- 训练备注 -->
+          <div>
+            <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              训练备注
+            </label>
+            <textarea
+              id="notes"
+              bind:value={workoutData.notes}
+              rows="3"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="记录今天的训练感受、遇到的问题等..."
+            ></textarea>
+          </div>
 
-				<!-- Sets -->
-				<div
-					class="space-y-2"
-					use:dndzone={{ items: exercise.sets, flipDurationMs }}
-					on:consider={(e) => handleDndSort(e, exerciseIndex)}
-					on:finalize={(e) => handleDndSort(e, exerciseIndex)}
-				>
-					<label class="block text-sm font-medium text-gray-700">组数</label>
-					{#each exercise.sets as set, setIndex (set.id)}
-						<div class="grid grid-cols-12 gap-2 items-center">
-							<div class="col-span-1 text-gray-400 cursor-grab active:cursor-grabbing">
-								<Fa icon={faGripLines} />
-							</div>
-							<span class="col-span-1 text-sm text-gray-500">#{set.set_number}</span>
-							<div class="col-span-3">
-								<input
-									type="number"
-									placeholder="次数"
-									bind:value={set.reps}
-									class="w-full p-2 border border-gray-300 rounded-md sm:text-sm"
-									min="0"
-								/>
-							</div>
-							<div class="col-span-4">
-								<input
-									type="number"
-									placeholder="重量 (kg)"
-									step="0.5"
-									bind:value={set.weight_kg}
-									class="w-full p-2 border border-gray-300 rounded-md sm:text-sm"
-									min="0"
-								/>
-							</div>
-							<div class="col-span-2">
-								<button
-									type="button"
-									on:click={() => removeSet(exerciseIndex, setIndex)}
-									class="text-red-500 hover:text-red-700"
-									aria-label="删除该组"
-								>
-									<Fa icon={faTrash} size="sm" />
-								</button>
-							</div>
-						</div>
-					{/each}
-					<button
-						type="button"
-						on:click={() => addSet(exerciseIndex)}
-						class="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-					>
-						<Fa icon={faPlus} size="sm" />
-						添加一组
-					</button>
-				</div>
-			</div>
-		{/each}
-
-		<button
-			type="button"
-			on:click={addExercise}
-			class="w-full flex justify-center items-center gap-2 p-2 border-2 border-dashed border-gray-300 rounded-md text-gray-500 hover:border-gray-400 hover:text-gray-600"
-		>
-			<Fa icon={faPlus} />
-			添加训练动作
-		</button>
-
-		<button
-			type="submit"
-			disabled={loading}
-			class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
-		>
-			{loading ? '正在保存...' : '保存完整训练'}
-		</button>
-	</form>
-
-	<!-- Training History -->
-	<div class="mt-8">
-		<h3 class="text-xl font-bold mb-4">最近的训练历史 (原始组)</h3>
-		{#if loading && logs.length === 0}
-			<p>正在加载历史记录...</p>
-		{:else if logs.length === 0}
-			<p>没有找到训练记录。</p>
-		{:else}
-			<div class="space-y-2">
-				{#each logs as log}
-					<div class="p-3 bg-gray-100 rounded-md">
-						<p class="font-semibold">
-							{log.exercises.name}: {log.reps}次 @ {log.weight_kg}kg
-						</p>
-						<p class="text-sm text-gray-500">
-							组号: {log.set_number} | {new Date(log.created_at).toLocaleString()}
-						</p>
-					</div>
-				{/each}
-			</div>
-		{/if}
-	</div>
-</div>
+          <!-- 操作按钮 -->
+          <div class="flex justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              on:click={closeModal}
+              class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {#if isSaving}
+                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                保存中...
+              {:else}
+                保存训练记录
+              {/if}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{/if}

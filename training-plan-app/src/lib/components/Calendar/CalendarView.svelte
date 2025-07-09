@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-svelte';
+	import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Activity, Clock } from 'lucide-svelte';
 
 	// 类型定义
 	type CalendarData = {
@@ -156,19 +156,19 @@
 	/**
 	 * 获取日期的热力图强度
 	 */
-	function getHeatmapIntensity(data?: CalendarData): string {
-		if (!data || data.log_count === 0) return '';
+	function getIntensityLevel(data?: CalendarData): number {
+		if (!data || data.log_count === 0) return 0;
 		
 		const duration = data.total_duration_minutes || 0;
 		const logCount = data.log_count;
 		
 		// 根据训练时长和次数计算强度
-		const intensity = Math.min(duration / 60 + logCount * 0.5, 4);
+		const intensity = duration / 60 + logCount * 0.5;
 		
-		if (intensity >= 3) return 'heat-4'; // 高强度
-		if (intensity >= 2) return 'heat-3'; // 中高强度
-		if (intensity >= 1) return 'heat-2'; // 中强度
-		return 'heat-1'; // 低强度
+		if (intensity >= 3) return 4; // 高强度
+		if (intensity >= 2) return 3; // 中高强度
+		if (intensity >= 1) return 2; // 中强度
+		return 1; // 低强度
 	}
 
 	/**
@@ -179,7 +179,7 @@
 		
 		switch (status) {
 			case '状态良好': return '🟢';
-			case '精力充沛': return '🟢';
+			case '精力充沛': return '⚡';
 			case '疲劳': return '🟡';
 			case '低效率': return '🔴';
 			case '一般': return '🔵';
@@ -214,10 +214,27 @@
 		return tooltip.trim();
 	}
 
+	/**
+	 * 计算月度统计
+	 */
+	function getMonthlyStats() {
+		const totalWorkouts = calendarData.reduce((sum, day) => sum + day.log_count, 0);
+		const totalDuration = calendarData.reduce((sum, day) => sum + (day.total_duration_minutes || 0), 0);
+		const activeDays = calendarData.filter(day => day.log_count > 0).length;
+		
+		return {
+			totalWorkouts,
+			totalHours: Math.round(totalDuration / 60 * 10) / 10,
+			activeDays
+		};
+	}
+
 	// 监听props变化，重新生成日历
 	$: if (currentYear && currentMonth && calendarData) {
 		generateCalendarDays();
 	}
+
+	$: monthlyStats = getMonthlyStats();
 
 	onMount(() => {
 		generateCalendarDays();
@@ -227,51 +244,85 @@
 <div class="calendar-container">
 	<!-- 日历头部 -->
 	<div class="calendar-header">
-		<div class="flex items-center space-x-4">
-			<button 
-				class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-gray-600 hover:text-gray-800"
-				on:click={goToPrevMonth}
-				aria-label="上个月"
-			>
-				<ChevronLeft class="w-5 h-5" />
-			</button>
+		<div class="header-left">
+			<h1 class="calendar-title">
+				<CalendarIcon class="w-7 h-7 text-indigo-600" />
+				<div class="title-text">
+					<span class="year">{currentYear}年</span>
+					<span class="month">{monthName}</span>
+				</div>
+			</h1>
 			
-			<h2 class="calendar-title">
-				<CalendarIcon class="w-6 h-6 mr-2" />
-				{currentYear}年 {monthName}
-			</h2>
-			
-			<button 
-				class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-gray-600 hover:text-gray-800"
-				on:click={goToNextMonth}
-				aria-label="下个月"
-			>
-				<ChevronRight class="w-5 h-5" />
-			</button>
+			<!-- 月度统计 -->
+			<div class="monthly-stats">
+				<div class="stat-item">
+					<Activity class="w-4 h-4 text-blue-500" />
+					<span>{monthlyStats.totalWorkouts}次训练</span>
+				</div>
+				<div class="stat-item">
+					<Clock class="w-4 h-4 text-green-500" />
+					<span>{monthlyStats.totalHours}小时</span>
+				</div>
+				<div class="stat-item">
+					<CalendarIcon class="w-4 h-4 text-purple-500" />
+					<span>{monthlyStats.activeDays}活跃天</span>
+				</div>
+			</div>
 		</div>
 		
-		<button 
-			class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-			on:click={goToToday}
-		>
-			今天
-		</button>
+		<div class="header-controls">
+			<div class="nav-buttons">
+				<button 
+					class="nav-btn"
+					on:click={goToPrevMonth}
+					aria-label="上个月"
+				>
+					<ChevronLeft class="w-5 h-5" />
+				</button>
+				
+				<button 
+					class="today-btn"
+					on:click={goToToday}
+				>
+					今天
+				</button>
+				
+				<button 
+					class="nav-btn"
+					on:click={goToNextMonth}
+					aria-label="下个月"
+				>
+					<ChevronRight class="w-5 h-5" />
+				</button>
+			</div>
+		</div>
 	</div>
 
 	<!-- 星期标题 -->
 	<div class="weekdays-header">
-		{#each weekDays as weekDay}
-			<div class="weekday-cell">{weekDay}</div>
+		{#each weekDays as weekDay, index}
+			<div class="weekday-cell" class:weekend={index === 0 || index === 6}>
+				{weekDay}
+			</div>
 		{/each}
 	</div>
 
 	<!-- 日历网格 -->
 	<div class="calendar-grid">
-		{#each calendarDays as day}
+		{#each calendarDays as day, index}
+			{@const intensityLevel = getIntensityLevel(day.data)}
+			{@const isWeekend = index % 7 === 0 || index % 7 === 6}
 			<button
-				class="calendar-day relative w-full h-16 rounded-lg border border-gray-200 p-1 transition-all duration-200 text-left hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 {day.isCurrentMonth ? 'current-month' : 'other-month'} 
-					{day.isToday ? 'today' : ''} 
-					{getHeatmapIntensity(day.data)}"
+				class="calendar-day"
+				class:current-month={day.isCurrentMonth}
+				class:other-month={!day.isCurrentMonth}
+				class:today={day.isToday}
+				class:weekend={isWeekend && day.isCurrentMonth}
+				class:has-workout={day.data && day.data.log_count > 0}
+				class:intensity-1={intensityLevel === 1}
+				class:intensity-2={intensityLevel === 2}
+				class:intensity-3={intensityLevel === 3}
+				class:intensity-4={intensityLevel === 4}
 				on:click={() => handleDayClick(day)}
 				title={getTooltip(day)}
 				disabled={!day.isCurrentMonth}
@@ -279,9 +330,9 @@
 				<!-- 日期数字 -->
 				<span class="day-number">{day.date}</span>
 				
-				<!-- 状态指示器 -->
+				<!-- 训练指示器 -->
 				{#if day.data && day.data.log_count > 0}
-					<div class="status-indicators">
+					<div class="workout-indicators">
 						<!-- 状态表情 -->
 						{#if day.data.status_summary}
 							<span class="status-emoji">
@@ -289,52 +340,65 @@
 							</span>
 						{/if}
 						
-						<!-- 训练次数小点 -->
-						<div class="log-count-dots">
-							{#each Array(Math.min(day.data.log_count, 3)) as _, i}
-								<div class="log-dot"></div>
+						<!-- 训练次数点 -->
+						<div class="workout-dots">
+							{#each Array(Math.min(day.data.log_count, 4)) as _, i}
+								<div class="workout-dot"></div>
 							{/each}
-							{#if day.data.log_count > 3}
-								<span class="log-count-plus">+</span>
+							{#if day.data.log_count > 4}
+								<span class="more-indicator">+</span>
 							{/if}
 						</div>
+						
+						<!-- 时长标签 -->
+						{#if day.data.total_duration_minutes && day.data.total_duration_minutes >= 60}
+							<div class="duration-badge">
+								{Math.round(day.data.total_duration_minutes / 60)}h
+							</div>
+						{/if}
 					</div>
+				{/if}
+				
+				<!-- 今天的特殊标记 -->
+				{#if day.isToday}
+					<div class="today-marker"></div>
 				{/if}
 			</button>
 		{/each}
 	</div>
 
-	<!-- 图例 -->
+	<!-- 图例说明 -->
 	<div class="calendar-legend">
 		<div class="legend-section">
-			<span class="legend-title">训练强度:</span>
-			<div class="heatmap-legend">
+			<h4>训练强度</h4>
+			<div class="intensity-legend">
 				<div class="legend-item">
-					<div class="legend-box heat-1"></div>
+					<div class="legend-box intensity-1"></div>
 					<span>轻度</span>
 				</div>
 				<div class="legend-item">
-					<div class="legend-box heat-2"></div>
+					<div class="legend-box intensity-2"></div>
 					<span>中度</span>
 				</div>
 				<div class="legend-item">
-					<div class="legend-box heat-3"></div>
+					<div class="legend-box intensity-3"></div>
 					<span>高度</span>
 				</div>
 				<div class="legend-item">
-					<div class="legend-box heat-4"></div>
+					<div class="legend-box intensity-4"></div>
 					<span>极高</span>
 				</div>
 			</div>
 		</div>
 		
 		<div class="legend-section">
-			<span class="legend-title">状态:</span>
+			<h4>状态说明</h4>
 			<div class="status-legend">
-				<span>🟢 良好</span>
-				<span>🟡 疲劳</span>
-				<span>🔴 低效</span>
-				<span>🔵 一般</span>
+				<span class="status-item">🟢 状态良好</span>
+				<span class="status-item">⚡ 精力充沛</span>
+				<span class="status-item">🟡 疲劳</span>
+				<span class="status-item">🔴 低效率</span>
+				<span class="status-item">🔵 一般</span>
 			</div>
 		</div>
 	</div>
@@ -342,194 +406,427 @@
 
 <style>
 	.calendar-container {
-		@apply bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full max-w-4xl mx-auto;
+		background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+		border-radius: 1rem;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+		border: 1px solid #f3f4f6;
+		padding: 1.5rem;
+		width: 100%;
+		max-width: 72rem;
+		margin: 0 auto;
 	}
 
 	.calendar-header {
-		@apply flex justify-between items-center mb-6;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 2rem;
+	}
+
+	.header-left {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
 	.calendar-title {
-		@apply text-xl font-bold text-gray-800 flex items-center;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
 	}
 
-	.nav-button {
-		/* @apply p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-gray-600 hover:text-gray-800; */
+	.title-text {
+		display: flex;
+		flex-direction: column;
 	}
 
-	.today-button {
-		/* @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium; */
+	.year {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1f2937;
+	}
+
+	.month {
+		font-size: 1.875rem;
+		font-weight: 700;
+		background: linear-gradient(to right, #4f46e5, #9333ea);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.monthly-stats {
+		display: flex;
+		gap: 1.5rem;
+	}
+
+	.stat-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: #4b5563;
+		background-color: #f9fafb;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.5rem;
+	}
+
+	.header-controls {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 1rem;
+	}
+
+	.nav-buttons {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.nav-btn {
+		padding: 0.75rem;
+		border-radius: 0.75rem;
+		transition: all 0.2s;
+		color: #4b5563;
+		border: 1px solid #e5e7eb;
+		background: white;
+		cursor: pointer;
+	}
+
+	.nav-btn:hover {
+		background-color: #eef2ff;
+		color: #4f46e5;
+		border-color: #c7d2fe;
+	}
+
+	.today-btn {
+		padding: 0.75rem 1rem;
+		background: linear-gradient(to right, #4f46e5, #9333ea);
+		color: white;
+		border-radius: 0.75rem;
+		transition: all 0.2s;
+		font-weight: 500;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: none;
+		cursor: pointer;
+	}
+
+	.today-btn:hover {
+		background: linear-gradient(to right, #4338ca, #7c3aed);
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 	}
 
 	.weekdays-header {
-		@apply grid grid-cols-7 gap-1 mb-2;
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+		gap: 0.25rem;
+		margin-bottom: 1rem;
 	}
 
 	.weekday-cell {
-		@apply text-center text-sm font-semibold text-gray-600 py-2;
+		text-align: center;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		padding: 0.75rem 0;
+		border-radius: 0.5rem;
+	}
+
+	.weekday-cell.weekend {
+		color: #ef4444;
 	}
 
 	.calendar-grid {
-		@apply grid grid-cols-7 gap-1 mb-6;
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+		gap: 0.25rem;
+		margin-bottom: 2rem;
 	}
 
 	.calendar-day {
-		/* @apply relative w-full h-16 rounded-lg border border-gray-200 p-1 transition-all duration-200 text-left hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1; */
+		position: relative;
+		width: 100%;
+		height: 5rem;
+		border-radius: 0.75rem;
+		border: 1px solid #e5e7eb;
+		padding: 0.5rem;
+		transition: all 0.2s;
+		text-align: left;
+		overflow: hidden;
+		background: white;
+		cursor: pointer;
+	}
+
+	.calendar-day:hover {
+		transform: scale(1.05);
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+		z-index: 10;
 	}
 
 	.calendar-day.current-month {
-		@apply bg-white;
+		background-color: white;
 	}
+
 	.calendar-day.current-month:hover {
-		@apply bg-gray-50;
+		background-color: #f9fafb;
 	}
 
 	.calendar-day.other-month {
-		@apply bg-gray-50 text-gray-400 cursor-not-allowed;
+		background-color: #f9fafb;
+		color: #9ca3af;
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.calendar-day.weekend {
+		border-color: #fecaca;
 	}
 
 	.calendar-day.today {
-		@apply border-blue-500 border-2;
+		border: 2px solid #6366f1;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		background-color: #eef2ff;
 	}
 
-	.calendar-day.today .day-number {
-		@apply text-blue-600 font-bold;
+	.calendar-day.has-workout {
+		border-color: #bbf7d0;
+		background-color: #f0fdf4;
 	}
 
-	/* 热力图效果 */
-	.calendar-day.heat-1 {
-		@apply bg-green-100 border-green-200;
+	.calendar-day.intensity-1 {
+		background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+		border-color: #86efac;
 	}
 
-	.calendar-day.heat-2 {
-		@apply bg-green-200 border-green-300;
+	.calendar-day.intensity-2 {
+		background: linear-gradient(135deg, #bef264 0%, #a3e635 100%);
+		border-color: #84cc16;
 	}
 
-	.calendar-day.heat-3 {
-		@apply bg-green-400 border-green-500;
+	.calendar-day.intensity-3 {
+		background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+		border-color: #22c55e;
+		color: white;
 	}
 
-	.calendar-day.heat-4 {
-		@apply bg-green-600 border-green-700 text-white;
-	}
-
-	.calendar-day.heat-4 .day-number {
-		@apply text-white;
+	.calendar-day.intensity-4 {
+		background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+		border-color: #16a34a;
+		color: white;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 	}
 
 	.day-number {
-		@apply text-sm font-medium text-gray-800;
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 
-	.status-indicators {
-		@apply absolute bottom-0 left-0 right-0 p-1 flex items-center justify-between;
+	.calendar-day.intensity-3 .day-number,
+	.calendar-day.intensity-4 .day-number {
+		color: white;
+	}
+
+	.workout-indicators {
+		position: absolute;
+		left: 0.25rem;
+		right: 0.25rem;
+		bottom: 0.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 
 	.status-emoji {
-		@apply text-xs;
+		font-size: 0.75rem;
 	}
 
-	.log-count-dots {
-		@apply flex items-center space-x-1;
+	.workout-dots {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 
-	.log-dot {
-		@apply w-1.5 h-1.5 bg-blue-500 rounded-full;
+	.workout-dot {
+		width: 0.375rem;
+		height: 0.375rem;
+		background-color: #3b82f6;
+		border-radius: 50%;
 	}
 
-	.calendar-day.heat-4 .log-dot {
-		@apply bg-white;
+	.calendar-day.intensity-3 .workout-dot,
+	.calendar-day.intensity-4 .workout-dot {
+		background-color: white;
 	}
 
-	.log-count-plus {
-		@apply text-xs font-bold text-blue-600;
+	.more-indicator {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: #2563eb;
+		margin-left: 0.25rem;
 	}
 
-	.calendar-day.heat-4 .log-count-plus {
-		@apply text-white;
+	.calendar-day.intensity-3 .more-indicator,
+	.calendar-day.intensity-4 .more-indicator {
+		color: white;
+	}
+
+	.duration-badge {
+		font-size: 0.75rem;
+		background-color: #dbeafe;
+		color: #1d4ed8;
+		padding: 0.125rem 0.25rem;
+		border-radius: 0.25rem;
+		font-weight: 500;
+	}
+
+	.calendar-day.intensity-3 .duration-badge,
+	.calendar-day.intensity-4 .duration-badge {
+		background-color: rgba(255, 255, 255, 0.2);
+		color: white;
+	}
+
+	.today-marker {
+		position: absolute;
+		top: 0.25rem;
+		right: 0.25rem;
+		width: 0.5rem;
+		height: 0.5rem;
+		background-color: #6366f1;
+		border-radius: 50%;
+		animation: pulse 2s infinite;
 	}
 
 	.calendar-legend {
-		@apply flex flex-wrap justify-between items-center pt-4 border-t border-gray-200 text-sm;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding-top: 1.5rem;
+		border-top: 1px solid #e5e7eb;
+		gap: 1rem;
 	}
 
 	.legend-section {
-		@apply flex items-center space-x-3;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
-	.legend-title {
-		@apply font-medium text-gray-700;
+	.legend-section h4 {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
 	}
 
-	.heatmap-legend {
-		@apply flex items-center space-x-2;
+	.intensity-legend {
+		display: flex;
+		gap: 0.75rem;
 	}
 
 	.legend-item {
-		@apply flex items-center space-x-1;
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
 	}
 
 	.legend-box {
-		@apply w-3 h-3 rounded border;
+		width: 1rem;
+		height: 1rem;
+		border-radius: 0.25rem;
+		border: 1px solid;
 	}
 
-	.legend-box.heat-1 {
-		@apply bg-green-100 border-green-200;
+	.legend-box.intensity-1 {
+		background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+		border-color: #86efac;
 	}
 
-	.legend-box.heat-2 {
-		@apply bg-green-200 border-green-300;
+	.legend-box.intensity-2 {
+		background: linear-gradient(135deg, #bef264 0%, #a3e635 100%);
+		border-color: #84cc16;
 	}
 
-	.legend-box.heat-3 {
-		@apply bg-green-400 border-green-500;
+	.legend-box.intensity-3 {
+		background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+		border-color: #22c55e;
 	}
 
-	.legend-box.heat-4 {
-		@apply bg-green-600 border-green-700;
+	.legend-box.intensity-4 {
+		background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+		border-color: #16a34a;
 	}
 
 	.status-legend {
-		@apply flex items-center space-x-3 text-xs;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		font-size: 0.875rem;
+	}
+
+	.status-item {
+		color: #4b5563;
+	}
+
+	/* 动画定义 */
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 
 	/* 响应式设计 */
 	@media (max-width: 768px) {
 		.calendar-container {
-			@apply p-4;
+			padding: 1rem;
 		}
 
 		.calendar-header {
-			@apply flex-col space-y-4;
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.monthly-stats {
+			flex-wrap: wrap;
+			gap: 0.5rem;
 		}
 
 		.calendar-day {
-			@apply h-12;
-		}
-
-		.day-number {
-			@apply text-xs;
-		}
-
-		.status-emoji {
-			@apply text-xs;
-		}
-
-		.log-dot {
-			@apply w-1 h-1;
+			height: 4rem;
+			font-size: 0.75rem;
 		}
 
 		.calendar-legend {
-			@apply flex-col space-y-2 items-start;
+			flex-direction: column;
+			gap: 1rem;
 		}
 
-		.legend-section {
-			@apply flex-col items-start space-y-1 space-x-0;
+		.intensity-legend {
+			flex-wrap: wrap;
+			gap: 0.5rem;
 		}
 
-		.heatmap-legend,
 		.status-legend {
-			@apply flex-wrap;
+			flex-direction: column;
+			gap: 0.25rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.calendar-day {
+			height: 3.5rem;
+		}
+
+		.day-number {
+			font-size: 0.75rem;
+		}
+
+		.workout-dot {
+			width: 0.25rem;
+			height: 0.25rem;
 		}
 	}
 </style> 

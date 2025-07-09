@@ -1,26 +1,14 @@
 <!-- 主布局文件 - 训练计划应用 -->
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
-  import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
+  import { user, initAuth } from '$lib/stores/auth'
   // 引入全局样式
   import '../app.css'
 
-  export let data
-  
-  $: ({ session, supabase } = data)
-
   onMount(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, newSession: Session | null) => {
-        if (newSession?.expires_at !== session?.expires_at) {
-          invalidate('supabase:auth')
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
+    // 初始化认证状态
+    initAuth()
   })
 </script>
 
@@ -28,7 +16,7 @@
 <header class="bg-white dark:bg-gray-800 shadow-md">
   <nav class="container mx-auto px-4 py-2 flex justify-between items-center">
     <a href="/" class="text-xl font-bold text-blue-600 dark:text-blue-400"> 弹跳训练营 </a>
-    {#if session}
+    {#if $user}
       <ul class="flex items-center space-x-4">
         <li>
           <a

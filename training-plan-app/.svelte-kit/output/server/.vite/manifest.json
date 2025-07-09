@@ -1,71 +1,349 @@
 {
   ".svelte-kit/generated/server/internal.js": {
     "file": "internal.js",
+    "name": "internal",
+    "src": ".svelte-kit/generated/server/internal.js",
+    "isEntry": true,
     "imports": [
       "_internal.js"
-    ],
-    "isEntry": true,
-    "src": ".svelte-kit/generated/server/internal.js"
+    ]
   },
-  "_escape.js": {
-    "file": "chunks/escape.js"
+  "_Icon.js": {
+    "file": "chunks/Icon.js",
+    "name": "Icon",
+    "imports": [
+      "_index.js"
+    ]
+  },
+  "_auth.js": {
+    "file": "chunks/auth.js",
+    "name": "auth",
+    "imports": [
+      "_index3.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "_client.js": {
+    "file": "chunks/client.js",
+    "name": "client",
+    "imports": [
+      "_exports.js",
+      "_index3.js",
+      "_index.js"
+    ]
+  },
+  "_exports.js": {
+    "file": "chunks/exports.js",
+    "name": "exports"
+  },
+  "_index.js": {
+    "file": "chunks/index.js",
+    "name": "index"
+  },
+  "_index2.js": {
+    "file": "chunks/index2.js",
+    "name": "index"
+  },
+  "_index3.js": {
+    "file": "chunks/index3.js",
+    "name": "index",
+    "imports": [
+      "_index.js"
+    ]
   },
   "_internal.js": {
     "file": "chunks/internal.js",
+    "name": "internal",
     "imports": [
-      "_ssr.js"
+      "_index.js"
+    ],
+    "dynamicImports": [
+      "src/hooks.server.ts"
     ]
   },
-  "_ssr.js": {
-    "file": "chunks/ssr.js"
-  },
-  "node_modules/@sveltejs/kit/src/runtime/components/error.svelte": {
-    "file": "entries/fallbacks/error.svelte.js",
+  "_plus.js": {
+    "file": "chunks/plus.js",
+    "name": "plus",
     "imports": [
-      "_ssr.js",
-      "_escape.js"
-    ],
+      "_index.js",
+      "_Icon.js"
+    ]
+  },
+  "_supabaseClient.js": {
+    "file": "chunks/supabaseClient.js",
+    "name": "supabaseClient"
+  },
+  "node_modules/@sveltejs/kit/src/runtime/components/svelte-5/error.svelte": {
+    "file": "entries/fallbacks/error.svelte.js",
+    "name": "entries/fallbacks/error.svelte",
+    "src": "node_modules/@sveltejs/kit/src/runtime/components/svelte-5/error.svelte",
     "isEntry": true,
-    "src": "node_modules/@sveltejs/kit/src/runtime/components/error.svelte"
+    "imports": [
+      "_index.js",
+      "_client.js"
+    ]
   },
   "node_modules/@sveltejs/kit/src/runtime/server/index.js": {
     "file": "index.js",
-    "imports": [
-      "_internal.js",
-      "_ssr.js"
-    ],
+    "name": "index",
+    "src": "node_modules/@sveltejs/kit/src/runtime/server/index.js",
     "isEntry": true,
-    "src": "node_modules/@sveltejs/kit/src/runtime/server/index.js"
+    "imports": [
+      "_index.js",
+      "_internal.js",
+      "_index2.js",
+      "_exports.js",
+      "_index3.js"
+    ]
   },
-  "src/routes/+layout.css": {
-    "file": "_app/immutable/assets/_layout.e35fbd97.css",
-    "src": "src/routes/+layout.css"
+  "src/hooks.server.ts": {
+    "file": "chunks/hooks.server.js",
+    "name": "hooks.server",
+    "src": "src/hooks.server.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/+layout.server.ts": {
+    "file": "entries/pages/_layout.server.ts.js",
+    "name": "entries/pages/_layout.server.ts",
+    "src": "src/routes/+layout.server.ts",
+    "isEntry": true
   },
   "src/routes/+layout.svelte": {
-    "css": [
-      "_app/immutable/assets/_layout.e35fbd97.css"
-    ],
     "file": "entries/pages/_layout.svelte.js",
-    "imports": [
-      "_ssr.js"
-    ],
+    "name": "entries/pages/_layout.svelte",
+    "src": "src/routes/+layout.svelte",
     "isEntry": true,
-    "src": "src/routes/+layout.svelte"
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_layout.C6a_6fLQ.css"
+    ]
   },
-  "src/routes/+page.css": {
-    "file": "_app/immutable/assets/_page.14b024cf.css",
-    "src": "src/routes/+page.css"
+  "src/routes/+layout.ts": {
+    "file": "entries/pages/_layout.ts.js",
+    "name": "entries/pages/_layout.ts",
+    "src": "src/routes/+layout.ts",
+    "isEntry": true
   },
   "src/routes/+page.svelte": {
-    "css": [
-      "_app/immutable/assets/_page.14b024cf.css"
-    ],
     "file": "entries/pages/_page.svelte.js",
-    "imports": [
-      "_ssr.js",
-      "_escape.js"
-    ],
+    "name": "entries/pages/_page.svelte",
+    "src": "src/routes/+page.svelte",
     "isEntry": true,
-    "src": "src/routes/+page.svelte"
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DVplh7uE.css"
+    ]
+  },
+  "src/routes/analysis/+page.svelte": {
+    "file": "entries/pages/analysis/_page.svelte.js",
+    "name": "entries/pages/analysis/_page.svelte",
+    "src": "src/routes/analysis/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_auth.js"
+    ]
+  },
+  "src/routes/api/calendar-summary/+server.ts": {
+    "file": "entries/endpoints/api/calendar-summary/_server.ts.js",
+    "name": "entries/endpoints/api/calendar-summary/_server.ts",
+    "src": "src/routes/api/calendar-summary/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "src/routes/api/exercises/+server.ts": {
+    "file": "entries/endpoints/api/exercises/_server.ts.js",
+    "name": "entries/endpoints/api/exercises/_server.ts",
+    "src": "src/routes/api/exercises/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/api/last-workout/+server.ts": {
+    "file": "entries/endpoints/api/last-workout/_server.ts.js",
+    "name": "entries/endpoints/api/last-workout/_server.ts",
+    "src": "src/routes/api/last-workout/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "src/routes/api/plans/+server.ts": {
+    "file": "entries/endpoints/api/plans/_server.ts.js",
+    "name": "entries/endpoints/api/plans/_server.ts",
+    "src": "src/routes/api/plans/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "src/routes/api/plans/[id]/+server.ts": {
+    "file": "entries/endpoints/api/plans/_id_/_server.ts.js",
+    "name": "entries/endpoints/api/plans/_id_/_server.ts",
+    "src": "src/routes/api/plans/[id]/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "src/routes/api/plans/[plan_id]/versions/+server.ts": {
+    "file": "entries/endpoints/api/plans/_plan_id_/versions/_server.ts.js",
+    "name": "entries/endpoints/api/plans/_plan_id_/versions/_server.ts",
+    "src": "src/routes/api/plans/[plan_id]/versions/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/api/plans/[plan_id]/versions/[version_number]/+server.ts": {
+    "file": "entries/endpoints/api/plans/_plan_id_/versions/_version_number_/_server.ts.js",
+    "name": "entries/endpoints/api/plans/_plan_id_/versions/_version_number_/_server.ts",
+    "src": "src/routes/api/plans/[plan_id]/versions/[version_number]/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/api/setup-demo/+server.ts": {
+    "file": "entries/endpoints/api/setup-demo/_server.ts.js",
+    "name": "entries/endpoints/api/setup-demo/_server.ts",
+    "src": "src/routes/api/setup-demo/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/api/streak-days/+server.ts": {
+    "file": "entries/endpoints/api/streak-days/_server.ts.js",
+    "name": "entries/endpoints/api/streak-days/_server.ts",
+    "src": "src/routes/api/streak-days/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js",
+      "_supabaseClient.js"
+    ]
+  },
+  "src/routes/auth/+page.svelte": {
+    "file": "entries/pages/auth/_page.svelte.js",
+    "name": "entries/pages/auth/_page.svelte",
+    "src": "src/routes/auth/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_auth.js"
+    ]
+  },
+  "src/routes/calendar/+page.svelte": {
+    "file": "entries/pages/calendar/_page.svelte.js",
+    "name": "entries/pages/calendar/_page.svelte",
+    "src": "src/routes/calendar/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_auth.js",
+      "_Icon.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.tn0RQdqM.css"
+    ]
+  },
+  "src/routes/exercises/+page.svelte": {
+    "file": "entries/pages/exercises/_page.svelte.js",
+    "name": "entries/pages/exercises/_page.svelte",
+    "src": "src/routes/exercises/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_client.js",
+      "_Icon.js",
+      "_plus.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DXuoz1oi.css"
+    ]
+  },
+  "src/routes/log/+page.svelte": {
+    "file": "entries/pages/log/_page.svelte.js",
+    "name": "entries/pages/log/_page.svelte",
+    "src": "src/routes/log/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_auth.js",
+      "_client.js"
+    ]
+  },
+  "src/routes/plans/+page.server.ts": {
+    "file": "entries/pages/plans/_page.server.ts.js",
+    "name": "entries/pages/plans/_page.server.ts",
+    "src": "src/routes/plans/+page.server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
+  },
+  "src/routes/plans/+page.svelte": {
+    "file": "entries/pages/plans/_page.svelte.js",
+    "name": "entries/pages/plans/_page.svelte",
+    "src": "src/routes/plans/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_index3.js",
+      "_plus.js",
+      "_Icon.js"
+    ]
+  },
+  "src/routes/profile/+page.svelte": {
+    "file": "entries/pages/profile/_page.svelte.js",
+    "name": "entries/pages/profile/_page.svelte",
+    "src": "src/routes/profile/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_auth.js",
+      "_client.js"
+    ]
+  },
+  "src/routes/tools/+page.svelte": {
+    "file": "entries/pages/tools/_page.svelte.js",
+    "name": "entries/pages/tools/_page.svelte",
+    "src": "src/routes/tools/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index.js",
+      "_auth.js",
+      "_client.js"
+    ]
+  },
+  "src/routes/tools/share/+page.server.ts": {
+    "file": "entries/pages/tools/share/_page.server.ts.js",
+    "name": "entries/pages/tools/share/_page.server.ts",
+    "src": "src/routes/tools/share/+page.server.ts",
+    "isEntry": true,
+    "imports": [
+      "_index2.js"
+    ]
   }
 }

@@ -4,11 +4,11 @@
   import { goto } from '$app/navigation';
   import { user, userProfile } from '$lib/stores/auth';
   import { analyzeJumpAbility, assessStrengthStructure } from '$lib/utils/analysis';
+  import type { Profile, JumpAnalysis, StrengthAssessment } from '$lib/utils/analysis';
   import JumpAnalysisChart from '$lib/components/Charts/JumpAnalysisChart.svelte';
   import StrengthRadarChart from '$lib/components/Charts/StrengthRadarChart.svelte';
   import CoreProblemsAnalysis from '$lib/components/Analysis/CoreProblemsAnalysis.svelte';
   import { demoProfile, demoJumpAnalysis, demoStrengthAssessment } from '$lib/data/demo';
-  import type { Profile, JumpAnalysis, StrengthAssessment } from '$lib/types';
 
   // 页面状态
   let loading = true;
@@ -98,6 +98,11 @@
 
   // 监听用户状态变化，重新加载数据
   $: if ($user !== undefined) {
+    loadAnalysisData();
+  }
+
+  // 监听用户资料变化，重新加载分析数据
+  $: if ($userProfile !== undefined) {
     loadAnalysisData();
   }
 </script>
@@ -192,21 +197,21 @@
           <!-- 弹跳能力分析 -->
           <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <JumpAnalysisChart 
-              {jumpAnalysis}
+              data={jumpAnalysis}
             />
           </div>
 
           <!-- 力量结构评估 -->
           <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <StrengthRadarChart 
-              {strengthAssessment}
+              data={strengthAssessment}
             />
           </div>
         </div>
 
         <!-- 核心问题分析 -->
         <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-          <CoreProblemsAnalysis {profile} />
+          <CoreProblemsAnalysis {jumpAnalysis} {strengthAssessment} />
         </div>
 
         <!-- 操作按钮 -->

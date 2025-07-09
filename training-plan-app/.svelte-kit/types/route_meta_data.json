@@ -18,12 +18,6 @@
 	"/api/last-workout": [
 		"src/routes/api/last-workout/+server.ts"
 	],
-	"/api/logs": [
-		"src/routes/api/logs/+server.ts"
-	],
-	"/api/logs/[id]": [
-		"src/routes/api/logs/[id]/+server.ts"
-	],
 	"/api/plans": [
 		"src/routes/api/plans/+server.ts"
 	],
@@ -50,10 +44,6 @@
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
-	"/debug": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
 	"/exercises": [
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
@@ -71,32 +61,12 @@
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
-	"/progress": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
-	"/setup-demo": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
-	"/test": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
 	"/tools": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
-	"/tools/jump-calculator": [
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
 	"/tools/share": [
 		"src/routes/tools/share/+page.server.ts",
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
-	"/tools/timer": [
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	]
