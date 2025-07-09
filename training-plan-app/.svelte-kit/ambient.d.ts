@@ -61,6 +61,7 @@ declare module '$env/static/private' {
 	export const LOGONSERVER: string;
 	export const MAVEN_HOME: string;
 	export const NODE: string;
+	export const NODE_ENV: string;
 	export const NODE_EXE: string;
 	export const NPM_CLI_JS: string;
 	export const npm_command: string;
@@ -143,6 +144,7 @@ declare module '$env/static/private' {
 declare module '$env/static/public' {
 	export const PUBLIC_SUPABASE_URL: string;
 	export const PUBLIC_SUPABASE_ANON_KEY: string;
+	export const PUBLIC_SUPABASE_SERVICE_KEY: string;
 }
 
 /**
@@ -196,6 +198,7 @@ declare module '$env/dynamic/private' {
 		LOGONSERVER: string;
 		MAVEN_HOME: string;
 		NODE: string;
+		NODE_ENV: string;
 		NODE_EXE: string;
 		NPM_CLI_JS: string;
 		npm_command: string;
@@ -285,6 +288,7 @@ declare module '$env/dynamic/public' {
 	export const env: {
 		PUBLIC_SUPABASE_URL: string;
 		PUBLIC_SUPABASE_ANON_KEY: string;
+		PUBLIC_SUPABASE_SERVICE_KEY: string;
 		[key: `PUBLIC_${string}`]: string | undefined;
 	}
 }

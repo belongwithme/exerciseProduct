@@ -13,6 +13,7 @@
 		"db:populate-exercises": "node --loader ts-node/esm src/scripts/populate-exercises.ts"
 	},
 	"devDependencies": {
+		"@sveltejs/adapter-auto": "^6.0.1",
 		"@sveltejs/adapter-vercel": "^5.7.2",
 		"@sveltejs/kit": "^2.22.2",
 		"@sveltejs/vite-plugin-svelte": "^5.1.0",

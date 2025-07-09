@@ -1,6 +1,8 @@
 {
-	"runtime": "edge",
-	"entrypoint": "index.js",
+	"runtime": "nodejs18.x",
+	"handler": "..\\..\\..\\exerciseProduct\\training-plan-app\\.svelte-kit\\vercel-tmp\\index.js",
+	"launcherType": "Nodejs",
+	"experimentalResponseStreaming": true,
 	"framework": {
 		"slug": "sveltekit",
 		"version": "2.22.2"
