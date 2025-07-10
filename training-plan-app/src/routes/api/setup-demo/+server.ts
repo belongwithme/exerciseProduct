@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ locals: { supabase, safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const POST: RequestHandler = async ({ locals: { supabase, getSession } }) => {
+	const session = await getSession();
 
 	if (!session) {
 		return json({ error: '请先登录' }, { status: 401 });

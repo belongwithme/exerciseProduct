@@ -6,8 +6,8 @@ import { supabase } from '$lib/utils/supabaseClient';
  * @description GET /api/streak-days - 获取用户的连续打卡天数
  * @returns {Response} - 返回包含连续天数的JSON响应
  */
-export const GET: RequestHandler = async ({ locals: { safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const GET: RequestHandler = async ({ locals: { getSession } }) => {
+	const session = await getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}

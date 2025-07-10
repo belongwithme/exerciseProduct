@@ -6,7 +6,7 @@ import { supabase } from '$lib/utils/supabaseClient';
  * @returns {Response} - 返回包含单个训练计划的JSON响应
  */
 export const GET: RequestHandler = async ({ params, locals }) => {
-	const { session } = await locals.safeGetSession();
+	const session = await locals.getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
@@ -68,8 +68,8 @@ export const GET: RequestHandler = async ({ params, locals }) => {
  * @description DELETE /api/plans/[id] - 删除指定的训练计划
  * @returns {Response} - 返回成功或失败的响应
  */
-export const DELETE: RequestHandler = async ({ params, locals: { safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const DELETE: RequestHandler = async ({ params, locals: { getSession } }) => {
+	const session = await getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
@@ -111,8 +111,8 @@ export const DELETE: RequestHandler = async ({ params, locals: { safeGetSession 
  * @description PUT /api/plans/[id] - 更新指定的训练计划
  * @returns {Response} - 返回更新后的训练计划
  */
-export const PUT: RequestHandler = async ({ request, params, locals: { safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const PUT: RequestHandler = async ({ request, params, locals: { getSession } }) => {
+	const session = await getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}

@@ -6,9 +6,9 @@ import { supabase } from '$lib/utils/supabaseClient';
  * @description GET /api/plans - 获取当前用户的所有训练计划及其包含的动作
  * @returns {Response} - 返回一个包含训练计划数组的JSON响应
  */
-export const GET: RequestHandler = async ({ locals: { safeGetSession } }) => {
+export const GET: RequestHandler = async ({ locals: { getSession } }) => {
     // 获取当前用户会话
-	const { session } = await safeGetSession();
+	const session = await getSession();
 	if (!session?.user) {
         // 如果用户未登录，返回401 Unauthorized
 		return json({ error: 'Unauthorized' }, { status: 401 });
@@ -53,9 +53,9 @@ export const GET: RequestHandler = async ({ locals: { safeGetSession } }) => {
  * @param {Request} request - 包含训练计划详情和动作列表的请求
  * @returns {Response} - 返回新创建的训练计划
  */
-export const POST: RequestHandler = async ({ request, locals: { safeGetSession } }) => {
+export const POST: RequestHandler = async ({ request, locals: { getSession } }) => {
     // 获取当前用户会话
-	const { session } = await safeGetSession();
+	const session = await getSession();
 	if (!session?.user) {
         // 如果用户未登录，返回401 Unauthorized
 		return json({ error: 'Unauthorized' }, { status: 401 });

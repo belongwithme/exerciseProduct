@@ -11,8 +11,8 @@ import { supabase } from '$lib/utils/supabaseClient';
  * - end_date: 结束日期 (YYYY-MM-DD)
  * @returns {Response} - 返回包含日历聚合数据的JSON响应
  */
-export const GET: RequestHandler = async ({ url, locals: { safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const GET: RequestHandler = async ({ url, locals: { getSession } }) => {
+	const session = await getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}

@@ -6,8 +6,8 @@ import { supabase } from '$lib/utils/supabaseClient';
  * @description GET /api/last-workout - 获取用户最后一次训练的日期
  * @returns {Response} - 返回包含最后训练日期的JSON响应
  */
-export const GET: RequestHandler = async ({ locals: { safeGetSession } }) => {
-	const { session } = await safeGetSession();
+export const GET: RequestHandler = async ({ locals: { getSession } }) => {
+	const session = await getSession();
 	if (!session?.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
