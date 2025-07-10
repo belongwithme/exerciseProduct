@@ -2,8 +2,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load = async ({ locals: { supabase, safeGetSession } }: Parameters<PageServerLoad>[0]) => {
-	const { session } = await safeGetSession();
+export const load = async ({ locals: { supabase, getSession } }: Parameters<PageServerLoad>[0]) => {
+	const session = await getSession();
 
 	if (!session) {
 		throw redirect(303, '/auth');
@@ -16,10 +16,14 @@ export const load = async ({ locals: { supabase, safeGetSession } }: Parameters<
       id,
       name,
       description,
+      version,
+      created_at,
+      updated_at,
       plan_exercises (
         target_sets,
         target_reps,
         notes,
+        exercise_order,
         exercises (
           name,
           description,

@@ -2,13 +2,23 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { page } from '$app/stores'
-  import { user, initAuth } from '$lib/stores/auth'
+  import { user, initAuth, setSupabaseClient } from '$lib/stores/auth'
   // 引入全局样式
   import '../app.css'
+  // 引入疲劳提醒组件
+  import FatigueAlert from '$lib/components/Analysis/FatigueAlert.svelte'
+  // 引入通知组件
+  import NotificationContainer from '$lib/components/NotificationContainer.svelte'
+
+  // 从 +layout.ts 获取数据
+  export let data
 
   onMount(() => {
-    // 初始化认证状态
-    initAuth()
+    // 设置 Supabase 客户端
+    setSupabaseClient(data.supabase)
+    
+    // 初始化认证状态，传入初始会话
+    initAuth(data.session)
   })
 </script>
 
@@ -119,6 +129,14 @@
 <main class="min-h-screen bg-gray-50 dark:bg-gray-900">
   <slot />
 </main>
+
+<!-- 疲劳提醒组件 - 仅在用户登录时显示 -->
+{#if $user}
+  <FatigueAlert />
+{/if}
+
+<!-- 全局通知组件 -->
+<NotificationContainer />
 
 <!-- 全局样式 -->
 <style>

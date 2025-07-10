@@ -8,7 +8,10 @@
   import JumpAnalysisChart from '$lib/components/Charts/JumpAnalysisChart.svelte';
   import StrengthRadarChart from '$lib/components/Charts/StrengthRadarChart.svelte';
   import CoreProblemsAnalysis from '$lib/components/Analysis/CoreProblemsAnalysis.svelte';
+  import FatigueAnalysis from '$lib/components/Analysis/FatigueAnalysis.svelte';
   import { demoProfile, demoJumpAnalysis, demoStrengthAssessment } from '$lib/data/demo';
+
+  export let data;
 
   // 页面状态
   let loading = true;
@@ -16,6 +19,9 @@
   let profile: Profile | null = null;
   let jumpAnalysis: JumpAnalysis | null = null;
   let strengthAssessment: StrengthAssessment | null = null;
+  
+  // 从 `data` prop 中解构出 `fatigueData`
+  $: fatigueAnalysisData = data.fatigueAnalysisData;
 
   // 页面标题
   const pageTitle = "能力分析";
@@ -208,6 +214,11 @@
             />
           </div>
         </div>
+
+        <!-- 疲劳分析区域 - 仅在用户登录时显示 -->
+        {#if $user}
+          <FatigueAnalysis data={fatigueAnalysisData} />
+        {/if}
 
         <!-- 核心问题分析 -->
         <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">

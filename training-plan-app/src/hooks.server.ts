@@ -1,61 +1,39 @@
-import { createServerClient } from '@supabase/ssr'
-import { type Handle, redirect } from '@sveltejs/kit'
-import { sequence } from '@sveltejs/kit/hooks'
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public'
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { Handle } from '@sveltejs/kit';
 
-const supabase: Handle = async ({ event, resolve }) => {
-	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-		cookies: {
-			getAll: () => event.cookies.getAll(),
-			setAll: (cookiesToSet) => {
-				cookiesToSet.forEach(({ name, value, options }) => {
-					event.cookies.set(name, value, { ...options, path: '/' })
-				})
-			},
-		},
-	})
+export const handle: Handle = async ({ event, resolve }) => {
+  event.locals.supabase = createServerClient(
+    PUBLIC_SUPABASE_URL,
+    PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get: (name: string) => event.cookies.get(name),
+        set: (name: string, value: string, options: CookieOptions) => {
+          event.cookies.set(name, value, { ...options, path: '/' });
+        },
+        remove: (name: string, options: CookieOptions) => {
+          event.cookies.delete(name, { ...options, path: '/' });
+        },
+      },
+    }
+  );
 
-	event.locals.safeGetSession = async () => {
-		const {
-			data: { session },
-		} = await event.locals.supabase.auth.getSession()
-		if (!session) {
-			return { session: null, user: null }
-		}
+  /**
+   * a little helper that is written for convenience so that instead
+   * of calling `const { data: { session } } = await event.locals.supabase.auth.getSession()`
+   * you can just call `await event.locals.getSession()`
+   */
+  event.locals.getSession = async () => {
+    const {
+      data: { session },
+    } = await event.locals.supabase.auth.getSession();
+    return session;
+  };
 
-		const {
-			data: { user },
-			error,
-		} = await event.locals.supabase.auth.getUser()
-		if (error) {
-			// JWT validation has failed
-			return { session: null, user: null }
-		}
-
-		return { session, user }
-	}
-
-	return resolve(event, {
-		filterSerializedResponseHeaders(name) {
-			return name === 'content-range' || name === 'x-supabase-api-version'
-		},
-	})
-}
-
-const authGuard: Handle = async ({ event, resolve }) => {
-	const { session, user } = await event.locals.safeGetSession()
-	event.locals.session = session
-	event.locals.user = user
-
-	// Example of protecting a route
-	// if (!event.locals.session && event.url.pathname.startsWith('/private')) {
-	//   redirect(303, '/auth')
-	// }
-	// if (event.locals.session && event.url.pathname === '/auth') {
-	//   redirect(303, '/private')
-	// }
-
-	return resolve(event)
-}
-
-export const handle: Handle = sequence(supabase, authGuard) 
+  return resolve(event, {
+    filterSerializedResponseHeaders(name) {
+      return name === 'content-range';
+    },
+  });
+}; 

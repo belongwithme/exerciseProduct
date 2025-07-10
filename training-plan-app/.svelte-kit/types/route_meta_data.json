@@ -6,6 +6,7 @@
 		"src/routes/+layout.server.ts"
 	],
 	"/analysis": [
+		"src/routes/analysis/+page.server.ts",
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
@@ -14,6 +15,9 @@
 	],
 	"/api/exercises": [
 		"src/routes/api/exercises/+server.ts"
+	],
+	"/api/fatigue-index": [
+		"src/routes/api/fatigue-index/+server.ts"
 	],
 	"/api/last-workout": [
 		"src/routes/api/last-workout/+server.ts"
@@ -54,6 +58,11 @@
 	],
 	"/plans": [
 		"src/routes/plans/+page.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/plans/[id]": [
+		"src/routes/plans/[id]/+page.server.ts",
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
